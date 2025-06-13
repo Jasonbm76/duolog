@@ -2,6 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Heading defaults with Inter font, bold weight, and proper spacing */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-inter);
+    font-weight: 700;
+    color: #FFFFFF; /* text-on-dark */
+    line-height: 1.2;
+    margin-bottom: 0.5em;
+  }
+  
+  h1 {
+    font-size: 2.25rem; /* text-4xl */
+    margin-bottom: 1rem;
+  }
+  
+  h2 {
+    font-size: 1.875rem; /* text-3xl */
+    margin-bottom: 0.75rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem; /* text-2xl */
+    margin-bottom: 0.5rem;
+  }
+  
+  h4 {
+    font-size: 1.25rem; /* text-xl */
+    margin-bottom: 0.5rem;
+  }
+  
+  h5 {
+    font-size: 1.125rem; /* text-lg */
+    margin-bottom: 0.25rem;
+  }
+  
+  h6 {
+    font-size: 1rem; /* text-base */
+    margin-bottom: 0.25rem;
+    font-weight: 600; /* slightly lighter for h6 */
+  }
+}
+
 :root {
   --surface-bg: #1f2937;
   --primary-border-top: #3b82f6;
@@ -23,36 +65,42 @@ body {
 }
 
 .glass-card {
-  --border-width: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
   position: relative;
-  background: hsl(from var(--surface-bg) h s l / 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
+/* Enhanced glass effect with subtle inner glow */
 .glass-card::before {
   content: "";
   position: absolute;
-  z-index: -1;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border-radius: inherit;
-  border: var(--border-width) solid transparent;
-  background: linear-gradient(
-      hsl(from var(--primary-border-top) h s l / 0.5),
-      hsl(from var(--primary-border-bottom) h s l / 0.3)
-    )
-    border-box;
-  mask: linear-gradient(black, black) border-box, linear-gradient(black, black) padding-box;
-  mask-composite: subtract;
+  padding: 1px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.4) 0%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+  pointer-events: none;
 }
 
 .glass-nav {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(250, 250, 250, 0.05); /* neutral-50 */
+  border-bottom: 1px solid rgba(250, 250, 250, 0.1); /* neutral-50 */
 }
 
 .gradient-text {
@@ -84,4 +132,15 @@ body {
 
 .float-animation {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Admin layout consistency */
+.admin-container {
+  max-width: 1280px; /* max-w-7xl */
+  margin: 0 auto;
+  padding: 0 1.5rem; /* px-6 */
+}
+
+.admin-page {
+  padding: 2rem 0; /* py-8 */
 }

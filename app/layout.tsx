@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 const inter = Inter({
@@ -9,8 +10,11 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
+const baseTitle = "DuoLog.ai - Two AI minds. One perfect response."
+const isDevelopment = process.env.NODE_ENV === 'development'
+
 export const metadata: Metadata = {
-  title: "DuoLog.ai - Two AI minds. One perfect response.",
+  title: isDevelopment ? `Local | ${baseTitle}` : baseTitle,
   description:
     "Stop copy-pasting between ChatGPT and Claude. Watch them collaborate in real-time to give you the best possible answer.",
     generator: 'v0.dev'
@@ -23,7 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body 
+        className={`${inter.className} antialiased`}
+        suppressHydrationWarning={true}
+      >
+        {children}
+        <Toaster position="top-center" />
+      </body>
     </html>
   )
 }

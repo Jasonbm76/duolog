@@ -19,7 +19,7 @@ Modern applications should use semantic color systems. **NEVER use hardcoded Tai
 <span className="text-warning">Warning message</span>
 <span className="text-primary">Primary brand</span>
 <span className="text-secondary">Secondary brand</span>
-<span className="text-muted-foreground">Muted text</span>
+<span className="text-on-dark">Muted text</span>
 ```
 
 #### **Complete Semantic Color Reference:**
@@ -29,7 +29,7 @@ Modern applications should use semantic color systems. **NEVER use hardcoded Tai
 - `text-info` / `bg-info` / `border-info` - Info states
 - `text-primary` / `bg-primary` / `border-primary` - Primary brand colors
 - `text-secondary` / `bg-secondary` / `border-secondary` - Secondary brand colors
-- `text-muted-foreground` - Muted/secondary text
+- `text-on-dark` - Muted/secondary text
 
 ### ✅ **Button Component Standards**
 

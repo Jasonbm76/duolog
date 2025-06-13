@@ -1,10 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer utilities {
   .text-balance {
@@ -14,73 +12,61 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    /* Updated for Duolog dark theme with GitHub Dark inspired colors */
+    --background: 217 33% 7%;  /* #0D1117 - GitHub Dark */
+    --foreground: 213 31% 91%; /* #E6EDF3 - Light text */
+    --card: 217 33% 10%;       /* Slightly lighter than background */
+    --card-foreground: 213 31% 91%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 217 91% 60%;    /* #2563EB - Blue 600 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 19% 27%;  /* #334155 - Slate 700 */
+    --secondary-foreground: 213 31% 91%;
+    --muted: 217 19% 27%;
+    --muted-foreground: 215 20% 65%; /* #94A3B8 - Slate 400 */
+    --accent: 258 90% 66%;     /* #8B5CF6 - Violet 500 */
+    --accent-foreground: 0 0% 100%;
+    --error: 0 84% 60%;  /* #EF4444 - Red 500 */
+    --error-foreground: 0 0% 100%;
+    --success: 158 64% 52%;    /* #10B981 - Emerald 500 */
+    --success-foreground: 0 0% 100%;
+    --warning: 43 96% 56%;     /* #F59E0B - Amber 500 */
+    --warning-foreground: 0 0% 0%;
+    --border: 217 19% 27%;     /* #334155 - Slate 700 */
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%;       /* Blue 600 for focus rings */
+    --radius: 0.75rem;         /* Slightly more rounded for modern feel */
+    
+    /* Chart colors for future admin dashboard */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Light mode fallback (if ever needed) */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222 84% 5%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 84% 5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 5%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 84% 5%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -88,7 +74,63 @@ body {
   * {
     @apply border-border;
   }
+  
+  html {
+    /* Force dark mode for Duolog */
+    @apply dark;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    /* Improved font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Ensure dark background always */
+    background-color: #0D1117;
+    color: #E6EDF3;
+  }
+  
+  /* Glassmorphism utilities */
+  .glass-card {
+    --border-width: 1px;
+    border-radius: 1rem;
+    position: relative;
+    background: hsl(from hsl(var(--background)) h s l / 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    border: var(--border-width) solid transparent;
+    background: linear-gradient(
+      hsl(217 91% 60% / 0.5), 
+      hsl(217 91% 60% / 0.2)
+    ) border-box;
+    mask: linear-gradient(black, black) border-box,
+         linear-gradient(black, black) padding-box;
+    mask-composite: subtract;
+    -webkit-mask-composite: subtract;
+  }
+  
+  /* Semantic text color utilities */
+  .text-error {
+    @apply text-red-500;
+  }
+  
+  .text-success {
+    @apply text-emerald-500;
+  }
+  
+  .text-warning {
+    @apply text-amber-500;
+  }
+  
+  .text-info {
+    @apply text-blue-500;
   }
 }

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(supabase init:*)",
+      "Bash(supabase start:*)",
+      "Bash(supabase stop:*)",
+      "Bash(PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/20250113_create_early_access_table.sql)",
+      "Bash(PGPASSWORD=postgres psql -h localhost -p 64322 -U postgres -d postgres -f supabase/migrations/20250113_create_early_access_table.sql)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}

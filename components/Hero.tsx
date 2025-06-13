@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { Brain } from "lucide-react"
 import EmailForm from "./EmailForm"
 
 export default function Hero() {
@@ -22,17 +23,21 @@ export default function Hero() {
     <section className="pt-32 pb-20 px-6">
       <div className="container mx-auto max-w-4xl text-center">
         <motion.div variants={staggerChildren} initial="initial" animate="animate" className="space-y-8">
-          <motion.h1
-            variants={fadeInUp}
-            className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight"
-          >
-            Two AI minds.{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-              One perfect response.
-            </span>
-          </motion.h1>
+          <motion.div variants={fadeInUp} className="space-y-2">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-on-dark leading-tight">
+              Two AI minds.
+              <sup className="ml-2">
+                <Brain className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-primary inline-block" />
+              </sup>
+            </h1>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
+              <span className="bg-gradient-to-r from-primary to-care bg-clip-text text-transparent">
+                One perfect response.
+              </span>
+            </h1>
+          </motion.div>
 
-          <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-on-dark max-w-3xl mx-auto leading-relaxed">
             Stop copy-pasting between ChatGPT and Claude. Watch them collaborate in real-time to give you the best
             possible answer.
           </motion.p>
