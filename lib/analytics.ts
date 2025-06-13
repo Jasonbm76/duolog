@@ -26,8 +26,19 @@ export type AnalyticsEvent =
 // Utility function to safely track events
 export const trackEvent = (event: AnalyticsEvent, props?: Record<string, string | number>) => {
   try {
-    if (typeof window !== 'undefined' && window.plausible) {
-      window.plausible(event, props ? { props } : undefined)
+    if (typeof window !== 'undefined') {
+      // Wait for plausible to be available (max 5 seconds)
+      const waitForPlausible = (retries = 50) => {
+        if (window.plausible) {
+          window.plausible(event, props ? { props } : undefined)
+        } else if (retries > 0) {
+          setTimeout(() => waitForPlausible(retries - 1), 100)
+        } else {
+          console.warn(`Analytics: plausible not available for event "${event}"`)
+        }
+      }
+      
+      waitForPlausible()
     }
   } catch (error) {
     console.warn('Analytics tracking failed:', error)
