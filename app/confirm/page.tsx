@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, AlertCircle, Loader2, Mail } from 'lucide-react'
@@ -9,7 +9,7 @@ import Link from 'next/link'
 
 type ConfirmationState = 'loading' | 'success' | 'error' | 'invalid'
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const [state, setState] = useState<ConfirmationState>('loading')
   const [message, setMessage] = useState('')
   const searchParams = useSearchParams()
@@ -163,5 +163,35 @@ export default function ConfirmPage() {
         {renderContent()}
       </div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="glass-card p-8 max-w-lg mx-auto">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center text-center space-y-4"
+        >
+          <div className="bg-primary/20 p-4 rounded-full">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-on-dark">Loading...</h1>
+            <p className="text-on-dark-muted">Please wait while we load the confirmation page.</p>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ConfirmContent />
+    </Suspense>
   )
 } 
