@@ -1,0 +1,33 @@
+🤖 Cursor Rules for Duolog
+
+🤖 When responding to me in Cursor, please include a 🤖 emoji at the start of your message to confirm you're using these rules.
+
+📚 **Read All Rule Files Below** (in order of importance):
+
+## 🔥 Critical Rules - READ FIRST
+See: .cursor/rules/critical.md
+
+## 🛠️ Technology Stack
+See: .cursor/rules/tech-stack.md
+
+## 📐 Code Style & Structure  
+See: .cursor/rules/code-style.md
+
+## 🔒 Security & Authentication
+See: .cursor/rules/security-auth.md
+
+## 🔌 API Route Patterns
+See: .cursor/rules/api-patterns.md
+
+## 🧪 Testing Guidelines
+See: .cursor/rules/testing.md
+
+## ⚡️ Performance & Optimization
+See: .cursor/rules/performance.md
+
+## 🎨 UI & Styling Guidelines
+See: .cursor/rules/ui-styling.md
+
+---
+
+Please respond 📕 ✅ I have read and understand all rules from the files listed above.
