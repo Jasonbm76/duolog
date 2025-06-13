@@ -17,6 +17,8 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
+_design/
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
