@@ -1,6 +1,6 @@
-# Enhanced v0 Prompt for PairPrompt.ai
+# Enhanced v0 Prompt for DuoLog.ai
 
-Build a one-page, dark-mode landing site for an AI SaaS startup called **PairPrompt.ai**. The app uses Claude and ChatGPT together to generate the best possible responses by having them collaborate and refine ideas through structured conversations.
+Build a one-page, dark-mode landing site for an AI SaaS startup called **DuoLog.ai**. The app uses Claude and ChatGPT together to generate the best possible responses by having them collaborate and refine ideas through structured conversations.
 
 ## 🎯 Design Requirements
 
@@ -125,7 +125,7 @@ const EmailForm = () => {
 ## 📱 Layout & Content
 
 ### Navigation Bar (Fixed)
-- Logo: 🧠 or 🔁 emoji + "PairPrompt"
+- Logo: 🧠 or 🔁 emoji + "DuoLog"
 - Minimal, clean design
 - Glassmorphism effect: `backdrop-blur-md bg-white/5`
 

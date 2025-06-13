@@ -1,10 +1,10 @@
-# 🧠 PromptPair.ai — Product Requirements Document (PRD)
+# 🧠 DuoLog.ai — Product Requirements Document (PRD)
 
 ## 1. Overview
-**Product Name:** PromptPair.ai  
+**Product Name:** DuoLog.ai  
 **Tagline:** *Two AI minds. One perfect prompt.*  
 **Summary:**  
-PromptPair.ai is a modern AI-powered prompt generator that combines Claude and GPT-4 in a cooperative loop to brainstorm, critique, and refine user-submitted prompts. It delivers smarter, more refined outputs by letting the two models collaborate—resulting in better prompts, faster.
+DuoLog.ai is a modern AI-powered prompt generator that combines Claude and GPT-4 in a cooperative loop to brainstorm, critique, and refine user-submitted prompts. It delivers smarter, more refined outputs by letting the two models collaborate—resulting in better prompts, faster.
 
 ---
 
@@ -21,7 +21,7 @@ PromptPair.ai is a modern AI-powered prompt generator that combines Claude and G
 
 Single-model prompt generators can feel flat, generic, or incomplete. Users often have to edit or regenerate multiple times. There's no standard tool that brings two powerful LLMs together in a back-and-forth dialogue to get a *"best of both worlds"* outcome.
 
-**PromptPair solves this** by letting Claude and GPT-4 collaborate in real time on user input, refining ideas like a pair of AI co-founders.
+**DuoLog solves this** by letting Claude and GPT-4 collaborate in real time on user input, refining ideas like a pair of AI co-founders.
 
 ---
 
@@ -69,7 +69,7 @@ Single-model prompt generators can feel flat, generic, or incomplete. Users ofte
 
 ## 6. Success Criteria (MVP)
 
-- ✅ Site deployed live at `promptpair.ai`
+- ✅ Site deployed live at `DuoLog.ai`
 - ✅ Working email capture with 100+ signups
 - ✅ Working prompt generation with Claude + GPT-4 loop
 - ✅ Prompt usage tracked per email
@@ -93,7 +93,7 @@ Single-model prompt generators can feel flat, generic, or incomplete. Users ofte
 - Function calling & context threading
 - API access for power users
 - Collaboration features (share prompts with teammates)
-- PromptPair “playground” mode (edit + replay model outputs)
+- DuoLog “playground” mode (edit + replay model outputs)
 - Claude/GPT “battles” with winner logic
 
 ---

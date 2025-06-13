@@ -1,10 +1,10 @@
-# PairPrompt MVP Planning Session
+# DuoLog MVP Planning Session
 
 *Role-Based AI Collaboration Demo*
 
 ## Initial Prompt
 
-"I need to plan the MVP features for PairPrompt.ai - a platform where ChatGPT and Claude collaborate on user prompts through 3 rounds of refinement. Target users are vibe coders who currently copy-paste between AI tools manually."
+"I need to plan the MVP features for DuoLog.ai - a platform where ChatGPT and Claude collaborate on user prompts through 3 rounds of refinement. Target users are vibe coders who currently copy-paste between AI tools manually."
 
 ---
 

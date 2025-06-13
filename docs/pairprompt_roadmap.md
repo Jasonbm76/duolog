@@ -1,10 +1,10 @@
-# PairPrompt.ai - Kickoff to Launch Roadmap
+# DuoLog.ai - Kickoff to Launch Roadmap
 
 *Complete Development & Documentation Process*
 
 ## 🎯 Project Overview
 
-**Goal**: Build PairPrompt.ai while documenting every step for SoloBuild case study  
+**Goal**: Build DuoLog.ai while documenting every step for SoloBuild case study  
 **Timeline**: 3-4 weeks to MVP launch  
 **Documentation Strategy**: Living docs that AI agents update automatically
 

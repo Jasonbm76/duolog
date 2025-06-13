@@ -1,8 +1,8 @@
-# PairPrompt.ai
+# DuoLog.ai
 
 > **Two AI minds. One perfect response.**
 
-PairPrompt.ai eliminates the manual copy-paste workflow between ChatGPT and Claude by letting them collaborate directly on your prompts. Watch two AI models refine and improve your ideas through structured conversation, delivering higher quality responses faster than ever.
+DuoLog.ai eliminates the manual copy-paste workflow between ChatGPT and Claude by letting them collaborate directly on your prompts. Watch two AI models refine and improve your ideas through structured conversation, delivering higher quality responses faster than ever.
 
 ## 🎯 The Problem
 
@@ -14,7 +14,7 @@ Vibe coders constantly switch between ChatGPT and Claude, manually copying respo
 
 ## ✨ The Solution
 
-PairPrompt.ai automates AI collaboration through **role-based conversations**:
+DuoLog.ai automates AI collaboration through **role-based conversations**:
 
 1. **Submit one prompt** - No more multiple accounts or tabs
 2. **Watch AI collaboration** - See ChatGPT and Claude refine ideas in real-time  
@@ -63,7 +63,7 @@ PairPrompt.ai automates AI collaboration through **role-based conversations**:
 
 ## 🎨 Design Philosophy
 
-PairPrompt.ai features a **premium dark-mode interface** inspired by:
+DuoLog.ai features a **premium dark-mode interface** inspired by:
 - GitHub Dark theme (`#0D1117`)
 - Material Design color system
 - Advanced glassmorphism effects
@@ -98,7 +98,7 @@ PairPrompt.ai features a **premium dark-mode interface** inspired by:
 
 ## 🏗️ Development Process
 
-PairPrompt.ai is being built as a **complete SoloBuild case study**, documenting every step from idea to launch:
+DuoLog.ai is being built as a **complete SoloBuild case study**, documenting every step from idea to launch:
 
 ### Phase 1: Foundation (Days 1-7)
 - Repository setup and documentation
@@ -132,8 +132,8 @@ Our living documentation system captures every decision and pattern:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pairprompt-ai.git
-cd pairprompt-ai
+git clone https://github.com/yourusername/DuoLog-ai.git
+cd DuoLog-ai
 
 # Install dependencies
 npm install
@@ -150,7 +150,7 @@ npm run dev
 
 ## 🤝 Contributing
 
-PairPrompt.ai is built in public as an educational resource. We welcome:
+DuoLog.ai is built in public as an educational resource. We welcome:
 
 - **Bug reports** and feature requests
 - **Documentation** improvements
@@ -169,17 +169,17 @@ PairPrompt.ai is built in public as an educational resource. We welcome:
 - Multi-model support (GPT-4, Claude, Gemini, Local models)
 - Custom role templates and conversation patterns
 - Team collaboration features
-- API for developers to build on PairPrompt
+- API for developers to build on DuoLog
 
 ## 📞 Contact & Community
 
-- **Website:** [PairPrompt.ai](https://pairprompt.ai) (Coming Soon)
-- **Twitter:** [@PairPromptAI](https://twitter.com/PairPromptAI)
-- **Email:** hello@pairprompt.ai
-- **Discord:** [Join our community](https://discord.gg/pairprompt)
+- **Website:** [DuoLog.ai](https://DuoLog.ai) (Coming Soon)
+- **Twitter:** [@DuoLogAI](https://twitter.com/DuoLogAI)
+- **Email:** hello@DuoLog.ai
+- **Discord:** [Join our community](https://discord.gg/DuoLog)
 
 ---
 
 **Built with ❤️ by the vibe coding community**
 
-*PairPrompt.ai is part of the SoloBuild.dev educational platform, teaching developers how to build and launch SaaS products using modern AI-assisted development workflows.*
+*DuoLog.ai is part of the SoloBuild.dev educational platform, teaching developers how to build and launch SaaS products using modern AI-assisted development workflows.*
