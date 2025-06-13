@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import Image from "next/image"
-import { trackNavigation } from "@/lib/analytics"
+
 
 export default function Navigation() {
   return (
@@ -23,18 +23,10 @@ export default function Navigation() {
           />
 
           <div className="hidden md:flex items-center gap-8">
-            <a 
-              href="#features" 
-              onClick={() => trackNavigation('features')}
-              className="text-on-dark hover:text-on-dark transition-colors"
-            >
+            <a href="#features" className="text-on-dark hover:text-on-dark transition-colors">
               Features
             </a>
-            <a 
-              href="#early-access" 
-              onClick={() => trackNavigation('early-access')}
-              className="text-on-dark hover:text-on-dark transition-colors"
-            >
+            <a href="#early-access" className="text-on-dark hover:text-on-dark transition-colors">
               Early Access
             </a>
           </div>

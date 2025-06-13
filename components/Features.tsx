@@ -4,7 +4,7 @@ import type React from "react"
 
 import { motion } from "framer-motion"
 import { MessageSquare, RefreshCw, Zap } from "lucide-react"
-import { trackFeatureInteraction } from "@/lib/analytics"
+
 
 interface Feature {
   icon: React.ReactNode
@@ -76,9 +76,7 @@ export default function Features() {
             <motion.div
               key={index}
               variants={itemVariants}
-              onMouseEnter={() => trackFeatureInteraction(feature.title, 'hover')}
-              onClick={() => trackFeatureInteraction(feature.title, 'click')}
-              className="glass-card p-8 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 group cursor-pointer"
+              className="glass-card p-8 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 group"
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-neutral-50/10 to-neutral-50/5 group-hover:from-neutral-50/20 group-hover:to-neutral-50/10 transition-all duration-300">

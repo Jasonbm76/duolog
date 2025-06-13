@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, CheckCircle, AlertCircle, Check } from "lucide-react"
 import { toast } from "sonner"
-import { trackEvent, trackFormField } from "@/lib/analytics"
+import { trackEvent } from "@/lib/analytics"
 
 interface EmailFormData {
   email: string
@@ -176,16 +176,12 @@ export default function EmailForm() {
             <Input
               {...register("email", {
                 required: "Email is required",
-                onBlur: (e) => {
-                  validateEmailOnBlur(e.target.value)
-                  trackFormField('blur', !!e.target.value)
-                }
+                onBlur: (e) => validateEmailOnBlur(e.target.value)
               })}
               type="email"
               placeholder="Enter your email for early access"
               aria-invalid={emailValidation.isValid === false}
               aria-describedby="email-validation-message"
-              onFocus={() => trackFormField('focus')}
               className={`pl-12 ${emailValidation.isValid !== null ? 'pr-12' : ''} h-12 bg-neutral-800/40 border-neutral-600/50 text-on-dark placeholder:text-on-dark-muted focus:border-primary focus:ring-2 focus:ring-primary/30 transition-colors ${
                 emailValidation.isValid === false ? 'border-error/70 focus:border-error focus:ring-error/30' : 
                 emailValidation.isValid === true ? 'border-success/70 focus:border-success focus:ring-success/30' : ''
