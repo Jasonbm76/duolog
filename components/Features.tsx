@@ -1,0 +1,99 @@
+"use client"
+
+import type React from "react"
+
+import { motion } from "framer-motion"
+import { MessageSquare, RefreshCw, Zap } from "lucide-react"
+
+interface Feature {
+  icon: React.ReactNode
+  title: string
+  description: string
+}
+
+const features: Feature[] = [
+  {
+    icon: <MessageSquare className="w-6 h-6 text-blue-400" />,
+    title: "AI Pair Programming",
+    description: "Watch ChatGPT and Claude refine your prompts through structured conversation",
+  },
+  {
+    icon: <RefreshCw className="w-6 h-6 text-violet-400" />,
+    title: "Smarter Refinement",
+    description: "3-round collaboration ensures every response is thoroughly considered and optimized",
+  },
+  {
+    icon: <Zap className="w-6 h-6 text-emerald-400" />,
+    title: "Better Results, Faster",
+    description: "No more manual copy-pasting. One prompt, two AI minds, perfect output",
+  },
+]
+
+export default function Features() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 60 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+  }
+
+  return (
+    <section id="features" className="py-20 px-6">
+      <div className="container mx-auto max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">How It Works</h2>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Experience the power of collaborative AI that thinks, refines, and delivers exceptional results
+          </p>
+        </motion.div>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              variants={itemVariants}
+              className="glass-card p-8 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 group"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5 group-hover:from-white/20 group-hover:to-white/10 transition-all duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors">
+                  {feature.title}
+                </h3>
+              </div>
+              <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
