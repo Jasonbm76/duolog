@@ -141,7 +141,7 @@ function EmailPreview({ withConfirmation, viewMode, contentType }: EmailPreviewP
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <img src="http://localhost:5001/logo.svg" alt="DuoLog.ai" class="logo" />
+              <img src="http://localhost:5001/logo-email.png" alt="DuoLog.ai" class="logo" />
             </div>
             <div class="content">
               <h2>You're on the early access list! 🎉</h2>
