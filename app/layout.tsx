@@ -27,6 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
+      <head>
+        <script defer data-domain="duolog.ai" src="https://plausible.io/js/script.pageview-props.revenue.tagged-events.js"></script>
+      </head>
       <body 
         className={`${inter.className} antialiased`}
         suppressHydrationWarning={true}

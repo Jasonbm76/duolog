@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, CheckCircle, AlertCircle, Check } from "lucide-react"
 import { toast } from "sonner"
+import { trackEvent, trackFormField } from "@/lib/analytics"
 
 interface EmailFormData {
   email: string
@@ -64,6 +65,11 @@ export default function EmailForm() {
   const onSubmit = async (data: EmailFormData) => {
     setErrorMessage(null)
     
+    // Track submit attempt
+    trackEvent('Email Form Submit', {
+      email_domain: data.email.split('@')[1] || 'unknown'
+    })
+    
     try {
       const response = await fetch('/api/early-access', {
         method: 'POST',
@@ -79,22 +85,44 @@ export default function EmailForm() {
         if (response.status === 429) {
           toast.error('Too many requests. Please try again later.')
           setErrorMessage('Too many requests. Please try again later.')
+          // Track rate limit error
+          trackEvent('Email Form Error', {
+            error_type: 'rate_limit'
+          })
         } else if (response.status === 409) {
           toast.info('This email is already registered!')
           setErrorMessage('This email is already registered!')
+          // Track duplicate email
+          trackEvent('Email Form Error', {
+            error_type: 'duplicate_email'
+          })
         } else {
           toast.error(result.error || 'Something went wrong')
           setErrorMessage(result.error || 'Something went wrong')
+          // Track generic error
+          trackEvent('Email Form Error', {
+            error_type: 'generic_error'
+          })
         }
         return
       }
       
       toast.success('Success! Check your email for confirmation.')
       setIsSubmitted(true)
+      
+      // Track successful submission
+      trackEvent('Email Form Success', {
+        email_domain: data.email.split('@')[1] || 'unknown'
+      })
     } catch (error) {
       console.error('Submission error:', error)
       toast.error('Network error. Please try again.')
       setErrorMessage('Network error. Please try again.')
+      
+      // Track network error
+      trackEvent('Email Form Error', {
+        error_type: 'network_error'
+      })
     }
   }
 
@@ -148,12 +176,16 @@ export default function EmailForm() {
             <Input
               {...register("email", {
                 required: "Email is required",
-                onBlur: (e) => validateEmailOnBlur(e.target.value)
+                onBlur: (e) => {
+                  validateEmailOnBlur(e.target.value)
+                  trackFormField('blur', !!e.target.value)
+                }
               })}
               type="email"
               placeholder="Enter your email for early access"
               aria-invalid={emailValidation.isValid === false}
               aria-describedby="email-validation-message"
+              onFocus={() => trackFormField('focus')}
               className={`pl-12 ${emailValidation.isValid !== null ? 'pr-12' : ''} h-12 bg-neutral-800/40 border-neutral-600/50 text-on-dark placeholder:text-on-dark-muted focus:border-primary focus:ring-2 focus:ring-primary/30 transition-colors ${
                 emailValidation.isValid === false ? 'border-error/70 focus:border-error focus:ring-error/30' : 
                 emailValidation.isValid === true ? 'border-success/70 focus:border-success focus:ring-success/30' : ''
@@ -199,6 +231,10 @@ export default function EmailForm() {
         <Button
           type="submit"
           disabled={isSubmitting}
+          onClick={() => {
+            // Track button click separately from form submission
+            trackEvent('Email Form Button Click')
+          }}
           className="w-full h-12 bg-gradient-to-r from-primary-600 to-care-600 hover:from-primary-700 hover:to-care-700 text-on-dark font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25"
         >
           {isSubmitting ? "Joining..." : "Get Early Access"}

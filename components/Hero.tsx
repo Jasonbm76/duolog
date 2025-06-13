@@ -26,8 +26,49 @@ export default function Hero() {
           <motion.div variants={fadeInUp} className="space-y-2">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-on-dark leading-tight">
               Two AI minds.
-              <sup className="ml-2">
-                <Brain className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-primary inline-block" />
+              <sup className="ml-2 relative inline-block">
+                <div className="relative w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10">
+                  {/* First brain - ChatGPT */}
+                  <motion.div
+                    className="absolute"
+                    animate={{
+                      rotateY: [0, 360],
+                      x: [0, 8, 0, -8, 0],
+                      z: [0, 4, 0, -4, 0],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    style={{
+                      transformStyle: "preserve-3d",
+                    }}
+                  >
+                    <Brain className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-primary drop-shadow-lg" />
+                  </motion.div>
+                  
+                  {/* Second brain - Claude */}
+                  <motion.div
+                    className="absolute"
+                    animate={{
+                      rotateY: [180, 540],
+                      x: [0, -8, 0, 8, 0],
+                      z: [0, -4, 0, 4, 0],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 2, // Offset by half the duration
+                    }}
+                    style={{
+                      transformStyle: "preserve-3d",
+                    }}
+                  >
+                    <Brain className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-care drop-shadow-lg" />
+                  </motion.div>
+                </div>
               </sup>
             </h1>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
