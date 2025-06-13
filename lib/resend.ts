@@ -157,7 +157,7 @@ export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmai
             <div class="wrapper">
               <div class="container">
                 <div class="header">
-                  <img src="${process.env.NEXT_PUBLIC_APP_URL}/logo.svg" alt="DuoLog.ai" class="logo" />
+                  <img src="${process.env.NEXT_PUBLIC_APP_URL}/logo-email.png" alt="DuoLog.ai" class="logo" />
                 </div>
                 <div class="content">
                   <h2>You're on the early access list! 🎉</h2>
