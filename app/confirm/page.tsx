@@ -158,7 +158,7 @@ function ConfirmContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 mt-16">
       <div className="glass-card p-8 max-w-lg mx-auto">
         {renderContent()}
       </div>
@@ -168,7 +168,7 @@ function ConfirmContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 mt-16">
       <div className="glass-card p-8 max-w-lg mx-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

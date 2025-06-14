@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Brain } from "lucide-react"
-import EmailForm from "./EmailForm"
+import CallToAction from "./CallToAction"
 
 export default function Hero() {
   const fadeInUp = {
@@ -20,7 +20,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="pt-32 pb-20 px-6">
+    <section className="pt-64 pb-20 px-6">
       <div className="container mx-auto max-w-4xl text-center">
         <motion.div variants={staggerChildren} initial="initial" animate="animate" className="space-y-8">
           <motion.div variants={fadeInUp} className="space-y-2">
@@ -84,7 +84,7 @@ export default function Hero() {
           </motion.p>
 
           <motion.div variants={fadeInUp} className="pt-8" id="early-access">
-            <EmailForm />
+            <CallToAction />
           </motion.div>
         </motion.div>
       </div>

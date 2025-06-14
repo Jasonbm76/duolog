@@ -3,7 +3,9 @@
 import type React from "react"
 
 import { motion } from "framer-motion"
-import { MessageSquare, RefreshCw, Zap } from "lucide-react"
+import { MessageSquare, RefreshCw, Zap, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 
 interface Feature {
@@ -89,6 +91,25 @@ export default function Features() {
               <p className="text-on-dark leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Call to Action */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="text-center mt-16"
+        >
+          <Link href="/chat">
+            <Button className="h-14 px-8 bg-gradient-to-r from-primary-600 to-care-600 hover:from-primary-700 hover:to-care-700 text-on-dark font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25">
+              Try Free Demo
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+          <p className="text-xs text-on-dark opacity-75 mt-2">
+            3 free conversations • No signup required
+          </p>
         </motion.div>
       </div>
     </section>
