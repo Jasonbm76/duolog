@@ -8,7 +8,12 @@
       "Bash(supabase stop:*)",
       "Bash(PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/20250113_create_early_access_table.sql)",
       "Bash(PGPASSWORD=postgres psql -h localhost -p 64322 -U postgres -d postgres -f supabase/migrations/20250113_create_early_access_table.sql)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

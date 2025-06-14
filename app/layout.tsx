@@ -16,7 +16,7 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 export const metadata: Metadata = {
   title: isDevelopment ? `Local | ${baseTitle}` : baseTitle,
   description:
-    "Stop copy-pasting between ChatGPT and Claude. Watch them collaborate in real-time to give you the best possible answer.",
+    "Two AI minds, better answers for everything. Watch them collaborate in real-time to give you the best possible answer.",
     generator: 'v0.dev'
 }
 

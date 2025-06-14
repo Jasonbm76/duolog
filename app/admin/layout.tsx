@@ -44,7 +44,7 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-on-dark-muted hover:text-on-dark hover:bg-white/10 transition-all duration-200 hover:scale-105 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white transition-all duration-200 hover:scale-105 active:scale-95"
                   >
                     <Icon className="w-4 h-4" />
                     <span className="text-sm font-medium">{item.label}</span>

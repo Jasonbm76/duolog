@@ -9,6 +9,8 @@ export interface DocFile {
   frontMatter: Record<string, any>;
   filePath: string;
   lastModified: Date;
+  category: string;
+  relativePath: string;
 }
 
 export interface ComponentInfo {
@@ -36,56 +38,106 @@ export async function getDocumentationFiles(): Promise<DocFile[]> {
     return [];
   }
 
-  const files = fs.readdirSync(docsDirectory);
   const docFiles: DocFile[] = [];
 
-  for (const file of files) {
-    if (file.endsWith('.md') || file.endsWith('.mdx')) {
-      const filePath = path.join(docsDirectory, file);
-      const content = fs.readFileSync(filePath, 'utf8');
-      const { data, content: markdownContent } = matter(content);
-      const stats = fs.statSync(filePath);
+  function scanDirectory(dir: string, category: string = 'General') {
+    const items = fs.readdirSync(dir);
 
-      docFiles.push({
-        slug: file.replace(/\.(md|mdx)$/, ''),
-        title: data.title || file.replace(/\.(md|mdx)$/, '').replace(/_/g, ' '),
-        content: markdownContent,
-        frontMatter: data,
-        filePath: `/docs/${file}`,
-        lastModified: stats.mtime,
-      });
+    for (const item of items) {
+      const itemPath = path.join(dir, item);
+      const stats = fs.statSync(itemPath);
+
+      if (stats.isDirectory()) {
+        // Use directory name as category, formatted nicely
+        const categoryName = item
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        scanDirectory(itemPath, categoryName);
+      } else if (item.endsWith('.md') || item.endsWith('.mdx')) {
+        const content = fs.readFileSync(itemPath, 'utf8');
+        const { data, content: markdownContent } = matter(content);
+        
+        // Create relative path from docs directory
+        const relativePath = path.relative(docsDirectory, itemPath);
+        // URL-encode the slug to handle spaces and special characters
+        const slug = encodeURIComponent(relativePath.replace(/\.(md|mdx)$/, ''));
+
+        docFiles.push({
+          slug,
+          title: data.title || item.replace(/\.(md|mdx)$/, '').replace(/[-_]/g, ' '),
+          content: markdownContent,
+          frontMatter: data,
+          filePath: `/docs/${relativePath}`,
+          lastModified: stats.mtime,
+          category,
+          relativePath,
+        });
+      }
     }
   }
 
-  return docFiles.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+  scanDirectory(docsDirectory);
+
+  return docFiles.sort((a, b) => {
+    // Sort by category first, then by title
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category);
+    }
+    return a.title.localeCompare(b.title);
+  });
 }
 
 // Get a single documentation file by slug
 export async function getDocumentationFile(slug: string): Promise<DocFile | null> {
   const docsDirectory = path.join(process.cwd(), 'docs');
-  const filePath = path.join(docsDirectory, `${slug}.md`);
-  const altFilePath = path.join(docsDirectory, `${slug}.mdx`);
+  
+  // Decode the slug to get the original path
+  const decodedSlug = decodeURIComponent(slug);
+  const possiblePaths = [];
+  
+  // Try direct path first
+  possiblePaths.push(
+    path.join(docsDirectory, `${decodedSlug}.md`),
+    path.join(docsDirectory, `${decodedSlug}.mdx`)
+  );
   
   let targetPath = '';
-  if (fs.existsSync(filePath)) {
-    targetPath = filePath;
-  } else if (fs.existsSync(altFilePath)) {
-    targetPath = altFilePath;
-  } else {
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      targetPath = possiblePath;
+      break;
+    }
+  }
+  
+  if (!targetPath) {
     return null;
   }
 
   const content = fs.readFileSync(targetPath, 'utf8');
   const { data, content: markdownContent } = matter(content);
   const stats = fs.statSync(targetPath);
+  const relativePath = path.relative(docsDirectory, targetPath);
+  
+  // Determine category from path
+  const pathParts = relativePath.split(path.sep);
+  let category = 'General';
+  if (pathParts.length > 1) {
+    category = pathParts[0]
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
 
   return {
     slug,
-    title: data.title || slug.replace(/_/g, ' '),
+    title: data.title || path.basename(targetPath).replace(/\.(md|mdx)$/, '').replace(/[-_]/g, ' '),
     content: markdownContent,
     frontMatter: data,
-    filePath: `/docs/${path.basename(targetPath)}`,
+    filePath: `/docs/${relativePath}`,
     lastModified: stats.mtime,
+    category,
+    relativePath,
   };
 }
 
@@ -97,6 +149,8 @@ export async function searchDocumentation(query: string): Promise<DocFile[]> {
   return files.filter(file => 
     file.title.toLowerCase().includes(searchTerm) ||
     file.content.toLowerCase().includes(searchTerm) ||
+    file.category.toLowerCase().includes(searchTerm) ||
+    file.relativePath.toLowerCase().includes(searchTerm) ||
     Object.values(file.frontMatter).some(value => 
       String(value).toLowerCase().includes(searchTerm)
     )

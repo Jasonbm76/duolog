@@ -79,7 +79,7 @@ export default function Hero() {
           </motion.div>
 
           <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-on-dark max-w-3xl mx-auto leading-relaxed">
-            Stop copy-pasting between ChatGPT and Claude. Watch them collaborate in real-time to give you the best
+            Two AI minds, better answers for everything. Watch them collaborate in real-time to give you the best
             possible answer.
           </motion.p>
 

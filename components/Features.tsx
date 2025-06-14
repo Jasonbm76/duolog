@@ -26,7 +26,7 @@ const features: Feature[] = [
   {
     icon: <Zap className="w-6 h-6 text-success" />,
     title: "Better Results, Faster",
-    description: "No more manual copy-pasting. One prompt, two AI minds, perfect output",
+    description: "Two AI minds, better answers for everything. One prompt, perfect output every time",
   },
 ]
 

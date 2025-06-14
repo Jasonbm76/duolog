@@ -97,6 +97,9 @@ export default function SomePage() {
 - **APPLY** proper card containment for content sections
 - **MAINTAIN** consistent spacing and visual hierarchy
 - **ENSURE** responsive design with proper max-widths
+- **ENSURE** that you always apply semantic color classes for all elements, using our tailwind system, that contrast well with the background color.
+- **ENSURE** Only use glass cards on the frontend / public pages and make sure to use the following appropriate colors - text-on-dark for primary text (headings, important content), text-on-dark-muted for secondary text (descriptions, captions)
+- **ENSURE** For the admin section use white cards with appropriate text and bg classes. Don't be afraid to use colors other than black or gray for text where appropriate.
 
 ## 🚨 CRITICAL: Hydration Safety & React Patterns
 

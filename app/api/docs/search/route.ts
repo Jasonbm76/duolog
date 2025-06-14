@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       return {
         slug: doc.slug,
         title: doc.title,
+        category: doc.category,
         excerpt,
         matchType,
       };
