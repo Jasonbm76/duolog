@@ -281,42 +281,16 @@ export default function UnifiedStatusBar({
                     </div>
                   </div>
 
-                  {/* Reset button - Always show in development or when running locally */}
-                  {/* Always show reset button with enhanced debugging */}
-                  <div className="space-y-2">
+                  {/* Reset button */}
+                  {process.env.NODE_ENV === 'development' && (
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('🔴 [UnifiedStatusBar] RESET BUTTON CLICKED!', e);
-                        console.log('🔴 [UnifiedStatusBar] Event target:', e.target);
-                        console.log('🔴 [UnifiedStatusBar] Environment:', {
-                          NODE_ENV: process.env.NODE_ENV,
-                          hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side',
-                          location: typeof window !== 'undefined' ? window.location.href : 'server-side'
-                        });
-                        console.log('🔴 [UnifiedStatusBar] About to call handleResetUsage...');
-                        handleResetUsage();
-                      }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium w-full"
+                      onClick={handleResetUsage}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Reset Usage
                     </button>
-                    
-                    {/* Debug test button */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('🟢 [UnifiedStatusBar] DEBUG: Simple click test worked!');
-                        alert('UnifiedStatusBar debug button clicked! Check console.');
-                      }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-error/10 border border-error/25 text-error rounded-lg hover:bg-error/20 transition-all duration-200 text-sm font-medium w-full"
-                    >
-                      🧪 Debug Test (Mobile)
-                    </button>
-                  </div>
+                  )}
                   
                   {/* Debug info */}
                   <div className="text-xs text-warning/70 p-2 bg-warning/5 rounded mt-2">

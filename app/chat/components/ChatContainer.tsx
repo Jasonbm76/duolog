@@ -177,16 +177,8 @@ export default function ChatContainer() {
 
   // Handler for usage status changes (used by reset button)
   const handleUsageStatusChange = (newStatus: UsageStatus | null) => {
-    console.log('🔄 [ChatContainer] handleUsageStatusChange called with:', newStatus);
-    console.log('🔄 [ChatContainer] Previous usageStatus was:', usageStatus);
     setUsageStatus(newStatus);
     setIsUsageLoaded(true); // Ensure we mark as loaded when status changes
-    console.log('✅ [ChatContainer] UsageStatus state updated');
-    
-    // Force a re-render to make sure UI updates
-    setTimeout(() => {
-      console.log('🔄 [ChatContainer] Current usageStatus after setState:', usageStatus);
-    }, 100);
   };
 
   const handleStartConversation = async (initialPrompt: string) => {
