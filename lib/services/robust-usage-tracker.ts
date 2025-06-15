@@ -137,6 +137,36 @@ class RobustUsageTracker {
         return existing as UsageRecord;
       }
 
+      // If no composite match found, try to find by IP address as fallback
+      if (ip && ip !== 'unknown') {
+        const { data: ipMatch } = await supabase
+          .from('usage_tracking')
+          .select('*')
+          .eq('ip_address', ip)
+          .order('last_conversation_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (ipMatch) {
+          console.log(`Found existing user by IP fallback: ${ip}`);
+          // Update the record with new identifiers to improve future matching
+          const { data: updated } = await supabase
+            .from('usage_tracking')
+            .update({
+              user_identifier: composite,
+              browser_fingerprint: fingerprint || ipMatch.browser_fingerprint,
+              persistent_id: persistentId || ipMatch.persistent_id,
+              session_id: sessionId || ipMatch.session_id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', ipMatch.id)
+            .select()
+            .single();
+
+          return updated as UsageRecord || ipMatch as UsageRecord;
+        }
+      }
+
       // No existing record found, create new one
       const newRecord = {
         user_identifier: composite,
