@@ -53,6 +53,7 @@ export default function ChatContainer() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTop = useRef(0);
   const isFinalSynthesisRef = useRef(false);
+  const lastRoundKeyRef = useRef<string | null>(null);
 
   // Stable message ID generation to avoid hydration issues
   const generateMessageId = (model: string, round: number) => {
@@ -209,6 +210,7 @@ export default function ChatContainer() {
       startConversation(initialPrompt);
       setCurrentRound(0);
       stepCounterRef.current = 0; // Reset step counter for new conversation
+      lastRoundKeyRef.current = null; // Reset round key guard
       setUserHasScrolled(false); // Reset scroll state for new conversation
 
       // Get the conversation flow to access processing states
@@ -224,6 +226,14 @@ export default function ChatContainer() {
         sessionId,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
+          // Guard against duplicate round starts for the same round/model
+          const roundKey = `${round}-${model}`;
+          if (lastRoundKeyRef.current === roundKey) {
+            console.warn('Duplicate round start detected, ignoring:', roundKey);
+            return;
+          }
+          lastRoundKeyRef.current = roundKey;
+          
           // Increment step counter for each AI response
           stepCounterRef.current = stepCounterRef.current + 1;
           const currentStepNumber = stepCounterRef.current;
@@ -380,6 +390,7 @@ export default function ChatContainer() {
     setCurrentRound(0);
     setActiveBreathingRound(0);
     stepCounterRef.current = 0; // Reset step counter
+    lastRoundKeyRef.current = null; // Reset round key guard
     isAIActiveRef.current = false; // Reset AI active state
     processingRef.current = false;
     clearProgression();
@@ -436,6 +447,7 @@ export default function ChatContainer() {
       continueConversation(followUpPrompt);
       setCurrentRound(0);
       stepCounterRef.current = 0; // Reset step counter for new conversation flow
+      lastRoundKeyRef.current = null; // Reset round key guard
 
       // Get the conversation flow to access processing states
       const flow = getMockConversationFlow(followUpPrompt);
@@ -450,6 +462,14 @@ export default function ChatContainer() {
         sessionId,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
+          // Guard against duplicate round starts for the same round/model
+          const roundKey = `${round}-${model}`;
+          if (lastRoundKeyRef.current === roundKey) {
+            console.warn('Duplicate round start detected, ignoring:', roundKey);
+            return;
+          }
+          lastRoundKeyRef.current = roundKey;
+          
           // Increment step counter for each AI response
           stepCounterRef.current = stepCounterRef.current + 1;
           const currentStepNumber = stepCounterRef.current;
