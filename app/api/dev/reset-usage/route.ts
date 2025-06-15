@@ -1,10 +1,5 @@
 import { NextRequest } from 'next/server';
 
-// Only allow in development
-if (process.env.NODE_ENV !== 'development') {
-  throw new Error('This API route is only available in development');
-}
-
 // Dynamic imports to avoid issues if Supabase isn't configured
 async function getSupabaseClient() {
   try {
