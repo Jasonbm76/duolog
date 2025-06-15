@@ -5,7 +5,6 @@ import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircl
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import DebugResetButton from '@/components/DebugResetButton';
 
 interface UsageStatus {
   used: number;
@@ -291,18 +290,6 @@ export default function UnifiedStatusBar({
                       Reset Usage
                     </button>
                   )}
-                  
-                  {/* Debug info */}
-                  <div className="text-xs text-warning/70 p-2 bg-warning/5 rounded mt-2">
-                    NODE_ENV: {process.env.NODE_ENV || 'undefined'}<br/>
-                    Hostname: {typeof window !== 'undefined' ? window.location.hostname : 'server'}<br/>
-                    Show Reset: {(process.env.NODE_ENV === 'development' || typeof window !== 'undefined' && window.location.hostname === 'localhost') ? 'YES' : 'NO'}
-                  </div>
-                  
-                  {/* Always show debug button for testing */}
-                  <div className="mt-3">
-                    <DebugResetButton />
-                  </div>
                 </div>
               )}
 
