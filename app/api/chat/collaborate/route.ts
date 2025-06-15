@@ -160,9 +160,18 @@ Provide a thorough, helpful response. After you respond, Claude will review your
 
           currentRound++;
         } catch (error) {
-          console.error('GPT-4 unavailable for initial response, falling back to Claude:', error);
+          console.error('🚨 GPT-4 FAILED in production:', {
+            error: error instanceof Error ? error.message : String(error),
+            hasUserOpenAI: !!userKeys?.openai,
+            hasEnvOpenAI: !!process.env.OPENAI_API_KEY,
+            apiKeyLength: userKeys?.openai?.length || process.env.OPENAI_API_KEY?.length || 0
+          });
           
-          // Log warning but continue with Claude
+          // Send error info to client for debugging
+          await writer.write({
+            type: 'error', 
+            error: `GPT-4 unavailable: ${error instanceof Error ? error.message : 'API key issue'}. Starting with Claude instead.`
+          });
           
           // Update round to show Claude starting
           await writer.write({

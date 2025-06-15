@@ -26,12 +26,19 @@ class OpenAIService {
   }
 
   async streamCompletion({ prompt, apiKey, onChunk }: StreamCompletionOptions): Promise<StreamCompletionResult> {
+    console.log('🔍 OpenAI Service Debug:', {
+      hasUserKey: !!apiKey,
+      hasEnvKey: !!process.env.OPENAI_API_KEY,
+      userKeyLength: apiKey?.length || 0,
+      envKeyLength: process.env.OPENAI_API_KEY?.length || 0
+    });
+
     const client = apiKey 
       ? new OpenAI({ apiKey }) 
       : this.defaultClient;
 
     if (!client) {
-      throw new Error('No OpenAI API key provided');
+      throw new Error('No OpenAI API key provided (neither user key nor environment key available)');
     }
 
     let fullResponse = '';
