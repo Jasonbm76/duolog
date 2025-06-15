@@ -39,6 +39,7 @@ export default function ChatContainer() {
   const stepCounterRef = useRef(0);
   const isAIActiveRef = useRef(false); // Track if any AI is currently active
   const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null);
+  const [isUsageLoaded, setIsUsageLoaded] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -108,39 +109,17 @@ export default function ChatContainer() {
     userHasScrolled
   ]);
 
-  // Generate sessionId after hydration
+  // Generate sessionId after hydration - only when truly needed
   useEffect(() => {
     if (!sessionId) {
       const service = isMockMode ? mockConversationService : realConversationService;
       setSessionId(service.generateSessionId());
     }
-  }, [sessionId, isMockMode]);
+  }, []); // Remove isMockMode dependency to prevent unnecessary regeneration
 
-  // Load usage status and saved keys on component mount
+  // Load saved keys on component mount
   useEffect(() => {
     if (!sessionId) return;
-
-    const loadUsageStatus = async () => {
-      try {
-        // Import fingerprinting utilities (dynamic import for client-side only)
-        const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
-        const identifiers = createUserIdentifier();
-        
-        const params = new URLSearchParams({
-          sessionId,
-          fingerprint: identifiers.fingerprint,
-          persistentId: identifiers.persistentId,
-        });
-        
-        const response = await fetch(`/api/chat/usage?${params}`);
-        if (response.ok) {
-          const data = await response.json();
-          setUsageStatus(data);
-        }
-      } catch (error) {
-        console.error('Failed to load usage status:', error);
-      }
-    };
 
     const loadSavedKeys = async () => {
       try {
@@ -155,9 +134,60 @@ export default function ChatContainer() {
       }
     };
 
-    loadUsageStatus();
     loadSavedKeys();
   }, [sessionId]);
+
+  // Load usage status whenever sessionId or userKeys change
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const loadUsageStatus = async () => {
+      try {
+        // Import fingerprinting utilities (dynamic import for client-side only)
+        const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
+        const identifiers = createUserIdentifier();
+        
+        const params = new URLSearchParams({
+          sessionId,
+          fingerprint: identifiers.fingerprint,
+          persistentId: identifiers.persistentId,
+        });
+
+        // Include user keys in the request if available
+        if (userKeys.openai || userKeys.anthropic) {
+          params.append('userKeys', JSON.stringify(userKeys));
+        }
+        
+        const response = await fetch(`/api/chat/usage?${params}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUsageStatus(data);
+        }
+      } catch (error) {
+        console.error('Failed to load usage status:', error);
+        // Even on error, mark as loaded to show something
+        setUsageStatus({ used: 0, limit: 5, hasOwnKeys: false });
+      } finally {
+        setIsUsageLoaded(true);
+      }
+    };
+
+    loadUsageStatus();
+  }, [sessionId, userKeys]);
+
+  // Handler for usage status changes (used by reset button)
+  const handleUsageStatusChange = (newStatus: UsageStatus | null) => {
+    console.log('🔄 [ChatContainer] handleUsageStatusChange called with:', newStatus);
+    console.log('🔄 [ChatContainer] Previous usageStatus was:', usageStatus);
+    setUsageStatus(newStatus);
+    setIsUsageLoaded(true); // Ensure we mark as loaded when status changes
+    console.log('✅ [ChatContainer] UsageStatus state updated');
+    
+    // Force a re-render to make sure UI updates
+    setTimeout(() => {
+      console.log('🔄 [ChatContainer] Current usageStatus after setState:', usageStatus);
+    }, 100);
+  };
 
   const handleStartConversation = async (initialPrompt: string) => {
     if (processingRef.current || !sessionId) return;
@@ -226,7 +256,12 @@ export default function ChatContainer() {
         sessionId,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
-          // Guard against duplicate round starts for the same round/model
+          // Guard against duplicate round starts and stale events after reset
+          if (processingRef.current === false) {
+            console.warn('Round start received after processing stopped, ignoring:', `${round}-${model}`);
+            return;
+          }
+          
           const roundKey = `${round}-${model}`;
           if (lastRoundKeyRef.current === roundKey) {
             console.warn('Duplicate round start detected, ignoring:', roundKey);
@@ -385,6 +420,10 @@ export default function ChatContainer() {
   };
 
   const handleReset = () => {
+    // Stop any ongoing processes first
+    const service = isMockMode ? mockConversationService : realConversationService;
+    service.stop();
+    
     resetConversation();
     setTypingAI(null);
     setCurrentRound(0);
@@ -394,6 +433,10 @@ export default function ChatContainer() {
     isAIActiveRef.current = false; // Reset AI active state
     processingRef.current = false;
     clearProgression();
+    
+    // Generate new session ID to prevent state carryover
+    const newSessionId = service.generateSessionId();
+    setSessionId(newSessionId);
   };
 
   const handleScrollToInput = () => {
@@ -462,7 +505,12 @@ export default function ChatContainer() {
         sessionId,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
-          // Guard against duplicate round starts for the same round/model
+          // Guard against duplicate round starts and stale events after reset
+          if (processingRef.current === false) {
+            console.warn('Round start received after processing stopped, ignoring:', `${round}-${model}`);
+            return;
+          }
+          
           const roundKey = `${round}-${model}`;
           if (lastRoundKeyRef.current === roundKey) {
             console.warn('Duplicate round start detected, ignoring:', roundKey);
@@ -630,6 +678,7 @@ export default function ChatContainer() {
         sessionId={sessionId}
         onSettingsClick={() => setShowSettings(true)}
         onStatusDropdownToggle={setIsStatusDropdownOpen}
+        onUsageStatusChange={handleUsageStatusChange}
       />
       
       {/* Mobile Settings Button - Responsive positioning */}
@@ -651,6 +700,7 @@ export default function ChatContainer() {
           usageStatus={usageStatus}
           sessionId={sessionId}
           onSettingsClick={() => setShowSettings(true)}
+          onUsageStatusChange={handleUsageStatusChange}
         />
       </div>
 
@@ -673,8 +723,69 @@ export default function ChatContainer() {
               >
                 <div className="lg:space-y-6 space-y-4">
                   
-                  {/* Welcome State */}
-                  {!state.conversation && !state.error && (
+                  {/* Loading state - hide everything until usage status is loaded */}
+                  {!isUsageLoaded && (
+                    <div className="text-center py-16">
+                      <div className="glass-card p-8 max-w-md mx-auto">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/20 rounded-full mb-4">
+                          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-on-dark mb-2">
+                          Loading...
+                        </h3>
+                        <p className="text-on-dark-muted">
+                          Checking your usage status
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Thank you message when out of usage */}
+                  {isUsageLoaded && !state.conversation && !state.error && (usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
+                    <div className="text-center py-8">
+                      <div className="glass-card p-8 max-w-md mx-auto">
+                        {/* Usage Limit Reached */}
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-warning/20 rounded-full mb-4">
+                          <CheckCircle className="w-6 h-6 text-warning" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-on-dark mb-2">
+                          Thank you for testing DuoLog!
+                        </h3>
+                        <p className="text-on-dark mb-4">
+                          You've successfully experienced {usageStatus.limit} AI collaboration conversations. We hope you enjoyed seeing Claude and GPT-4 work together to refine your prompts!
+                        </p>
+                        <div className="text-sm text-on-dark-muted mb-4 p-3 bg-on-dark/5 rounded-lg">
+                          <p className="font-medium mb-1">What's next?</p>
+                          <p>Join our early access waitlist to get notified when we launch with unlimited conversations and premium features.</p>
+                        </div>
+                        
+                        {/* Email signup form */}
+                        <div className="mb-4">
+                          <EmailForm />
+                        </div>
+                        
+                        {/* OR divider and API keys option (dev only) */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <>
+                            <div className="flex items-center mb-4">
+                              <div className="flex-1 border-t border-on-dark/20"></div>
+                              <span className="px-3 text-xs text-on-dark-muted">OR</span>
+                              <div className="flex-1 border-t border-on-dark/20"></div>
+                            </div>
+                            <button
+                              onClick={() => setShowSettings(true)}
+                              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                            >
+                              Add your own API keys for unlimited access
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Welcome State - hide if user is out of usage */}
+                  {isUsageLoaded && !state.conversation && !state.error && !(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
                     <div className="text-center py-16">
                       <div className="glass-card p-8 max-w-2xl mx-auto">
                         {/* Animated Brains */}
@@ -995,8 +1106,9 @@ export default function ChatContainer() {
           </div>
         </div>
 
-        {/* Fixed Input Area */}
-        <div ref={promptInputRef} className="mb-6 px-0">
+        {/* Fixed Input Area - hide if user is out of usage or still loading */}
+        {isUsageLoaded && !(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
+          <div ref={promptInputRef} className="mb-6 px-0">
           <div className="container-fluid mx-auto lg:max-w-4xl max-w-full">
             <PromptInput
               onSubmit={isConversationComplete ? handleContinueConversation : handleStartConversation}
@@ -1035,7 +1147,8 @@ export default function ChatContainer() {
               )}
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Settings Dialog */}

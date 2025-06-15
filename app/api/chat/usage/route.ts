@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const fingerprint = searchParams.get('fingerprint');
     const persistentId = searchParams.get('persistentId');
     const email = searchParams.get('email');
+    const userKeysParam = searchParams.get('userKeys');
 
     // Extract IP address
     const ip = extractIPAddress(request);
@@ -25,10 +26,22 @@ export async function GET(request: NextRequest) {
     // Get usage information
     const usage = await robustUsageTracker.getUsage(request, identifiers, email || undefined);
 
+    // Check if user has their own API keys
+    let hasOwnKeys = false;
+    if (userKeysParam) {
+      try {
+        const userKeys = JSON.parse(userKeysParam);
+        hasOwnKeys = !!(userKeys.openai || userKeys.anthropic);
+      } catch (error) {
+        console.error('Error parsing user keys:', error);
+        hasOwnKeys = false;
+      }
+    }
+
     return new Response(JSON.stringify({
       used: usage.used,
       limit: usage.limit,
-      hasOwnKeys: false, // TODO: Check if user has their own keys
+      hasOwnKeys,
     }), {
       headers: { 
         'Content-Type': 'application/json',

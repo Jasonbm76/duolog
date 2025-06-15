@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import DebugResetButton from './DebugResetButton';
 
 interface UsageStatus {
   used: number;
@@ -20,6 +20,7 @@ interface StatusButtonProps {
   sessionId: string;
   onSettingsClick: () => void;
   onDropdownToggle?: (isOpen: boolean) => void;
+  onUsageStatusChange?: (newStatus: UsageStatus | null) => void;
 }
 
 export default function StatusButton({ 
@@ -28,7 +29,8 @@ export default function StatusButton({
   usageStatus, 
   sessionId,
   onSettingsClick,
-  onDropdownToggle
+  onDropdownToggle,
+  onUsageStatusChange
 }: StatusButtonProps) {
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
@@ -55,7 +57,12 @@ export default function StatusButton({
   }, [conversationId, isMockMode]);
 
   const handleResetUsage = async () => {
+    console.log('🔴 [StatusButton] RESET BUTTON CLICKED - handleResetUsage called!');
+    console.log('🔴 [StatusButton] NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔴 [StatusButton] Event handler is working!');
+    
     try {
+      console.log('🔄 Starting reset usage...');
       const response = await fetch('/api/dev/reset-usage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,12 +70,20 @@ export default function StatusButton({
       });
       
       const result = await response.json();
+      console.log('Reset API response:', result);
       
       if (response.ok) {
         if (result.success) {
           toast.success(result.message || 'Usage counter reset!');
-          // Trigger a refresh of usage status in parent component
-          window.location.reload(); // Simple way to refresh usage status
+          
+          // Add a small delay to ensure database transaction is committed
+          console.log('⏳ Waiting for database commit...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Refresh usage status without full page reload
+          console.log('🔄 Refreshing usage status...');
+          await refreshUsageStatus();
+          console.log('✅ Reset workflow completed');
         } else {
           toast.info(result.message || 'Database not configured');
         }
@@ -78,6 +93,58 @@ export default function StatusButton({
     } catch (error) {
       console.error('Failed to reset usage:', error);
       toast.error('Network error - failed to reset usage');
+    }
+  };
+
+  const refreshUsageStatus = async () => {
+    try {
+      console.log('🔄 Refreshing usage status with identifiers...');
+      
+      // Import fingerprinting utilities (dynamic import for client-side only)
+      const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
+      const identifiers = createUserIdentifier();
+      
+      console.log('Generated identifiers:', {
+        fingerprint: identifiers.fingerprint,
+        persistentId: identifiers.persistentId,
+        sessionId
+      });
+      
+      const params = new URLSearchParams({
+        sessionId,
+        fingerprint: identifiers.fingerprint,
+        persistentId: identifiers.persistentId,
+      });
+
+      // Check for user keys in localStorage and include them
+      try {
+        const { SecureStorage } = await import('@/lib/utils/encryption');
+        const stored = await SecureStorage.getItem('duolog-api-keys');
+        if (stored) {
+          const userKeys = JSON.parse(stored);
+          if (userKeys.openai || userKeys.anthropic) {
+            params.append('userKeys', JSON.stringify(userKeys));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user keys for refresh:', error);
+      }
+      
+      const apiUrl = `/api/chat/usage?${params}`;
+      console.log('Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Usage API response:', data);
+        console.log('Calling onUsageStatusChange with:', data);
+        onUsageStatusChange?.(data);
+        console.log('✅ Usage status refresh completed');
+      } else {
+        console.error('Usage API request failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to refresh usage status:', error);
     }
   };
 
@@ -132,20 +199,6 @@ export default function StatusButton({
       {/* Expanded dropdown */}
       {isExpanded && (
         <>
-          {/* Backdrop - rendered as portal to document body */}
-          {typeof window !== 'undefined' && createPortal(
-            <div 
-              className="fixed inset-0 z-[100]" 
-              onClick={(e) => {
-                console.log('Backdrop clicked!');
-                e.preventDefault();
-                e.stopPropagation();
-                setIsExpanded(false);
-              }}
-            />,
-            document.body
-          )}
-          
           {/* Dropdown panel */}
           <div className="absolute top-full right-0 mt-8 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-background/95 backdrop-blur-xl border border-white/10 shadow-xl z-[110]">
             <div className="p-4">
@@ -218,16 +271,44 @@ export default function StatusButton({
                     </div>
                   </div>
 
-                  {/* Reset button */}
-                  {process.env.NODE_ENV === 'development' && (
+                  {/* Reset button - Always show in development or when running locally */}
+                  {/* Always show reset button in development with enhanced debugging */}
+                  <div className="space-y-2">
                     <button
-                      onClick={handleResetUsage}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium"
+                      onClick={() => {
+                        console.log('🔴 [StatusButton] RESET BUTTON CLICKED!');
+                        console.log('🔴 [StatusButton] About to call handleResetUsage...');
+                        handleResetUsage();
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium w-full"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Reset Usage
                     </button>
-                  )}
+                    
+                    {/* Debug test button */}
+                    <button
+                      onClick={() => {
+                        console.log('🟢 DEBUG: Simple click test worked!');
+                        alert('Debug button clicked! Check console for logs.');
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-error/10 border border-error/25 text-error rounded-lg hover:bg-error/20 transition-all duration-200 text-sm font-medium w-full"
+                    >
+                      🧪 Debug Test Button
+                    </button>
+                  </div>
+                  
+                  {/* Debug info */}
+                  <div className="text-xs text-warning/70 p-2 bg-warning/5 rounded mt-2">
+                    NODE_ENV: {process.env.NODE_ENV || 'undefined'}<br/>
+                    Hostname: {typeof window !== 'undefined' ? window.location.hostname : 'server'}<br/>
+                    Show Reset: {(process.env.NODE_ENV === 'development' || typeof window !== 'undefined' && window.location.hostname === 'localhost') ? 'YES' : 'NO'}
+                  </div>
+                  
+                  {/* Always show debug button for testing */}
+                  <div className="mt-3">
+                    <DebugResetButton />
+                  </div>
                 </div>
               )}
 

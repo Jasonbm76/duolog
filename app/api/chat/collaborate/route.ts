@@ -3,7 +3,7 @@ import { anthropic } from '@/lib/services/anthropic';
 import { openai } from '@/lib/services/openai';
 import { createStreamResponse } from '@/lib/services/streaming';
 import { rateLimiter } from '@/lib/services/rate-limiter';
-import { usageTracker } from '@/lib/services/usage-tracker';
+import { robustUsageTracker } from '@/lib/services/robust-usage-tracker';
 
 export const runtime = 'edge';
 
@@ -30,6 +30,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Extract IP address for usage tracking
+    const { extractIPAddress } = await import('@/lib/utils/ip-utils');
+    const ip = extractIPAddress(request);
+    
+    // Create user identifiers  
+    const identifiers = {
+      composite: '', // Will be set by tracker
+      ip,
+      fingerprint: undefined,
+      persistentId: undefined, 
+      sessionId: sessionId || undefined,
+    };
+
     // Check rate limits if using our keys
     if (!userKeys?.openai || !userKeys?.anthropic) {
       const rateLimitCheck = rateLimiter.canAttempt(request);
@@ -47,8 +60,8 @@ export async function POST(request: NextRequest) {
       // Record the attempt
       rateLimiter.recordAttempt(request);
 
-      // Check usage limits
-      const usageCheck = await usageTracker.checkLimit(sessionId, email);
+      // Check usage limits with robust tracking
+      const usageCheck = await robustUsageTracker.checkLimit(request, identifiers, email);
       if (!usageCheck.allowed) {
         return new Response(JSON.stringify({ 
           error: 'Free usage limit reached', 
@@ -103,6 +116,11 @@ export async function POST(request: NextRequest) {
 
         let gptResult1;
         try {
+          // Check if OpenAI is available before attempting
+          if (!userKeys?.openai && !process.env.OPENAI_API_KEY) {
+            throw new Error('No OpenAI API key available');
+          }
+          
           gptResult1 = await openai.streamCompletion({
             prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. A user has asked: "${prompt}"
 
@@ -143,6 +161,16 @@ Provide a thorough, helpful response. After you respond, Claude will review your
           currentRound++;
         } catch (error) {
           console.error('GPT-4 unavailable for initial response, falling back to Claude:', error);
+          
+          // Log warning but continue with Claude
+          
+          // Update round to show Claude starting
+          await writer.write({
+            type: 'round_start',
+            round: currentRound,
+            model: 'claude',
+            inputPrompt: prompt,
+          });
           
           // Fallback to Claude for initial response
           const claudeResult1 = await anthropic.streamCompletion({
@@ -199,7 +227,7 @@ Provide a thorough, helpful response. Focus on being comprehensive and addressin
           if (nextSpeaker === 'gpt-4') {
             try {
               // Build conversation context for GPT-4
-              const conversationContext = conversationHistory.map((msg, i) => 
+              const conversationContext = conversationHistory.map((msg) => 
                 `${msg.role === 'claude' ? 'Claude' : 'GPT-4'}: ${msg.content}`
               ).join('\n\n');
 
@@ -243,7 +271,7 @@ Be honest about whether the current answer is sufficient or needs enhancement.`,
             }
           } else {
             // Claude's turn
-            const conversationContext = conversationHistory.map((msg, i) => 
+            const conversationContext = conversationHistory.map((msg) => 
               `${msg.role === 'claude' ? 'Claude' : 'GPT-4'}: ${msg.content}`
             ).join('\n\n');
 
@@ -361,7 +389,7 @@ Do not mention the collaboration process or that this is a synthesis. Just provi
 
         // Track usage if using our keys
         if (!userKeys?.openai || !userKeys?.anthropic) {
-          await usageTracker.increment(sessionId, email);
+          await robustUsageTracker.increment(request, identifiers, email);
         }
 
         await writer.write({

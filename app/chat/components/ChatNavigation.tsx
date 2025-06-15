@@ -21,6 +21,7 @@ interface ChatNavigationProps {
   sessionId: string;
   onSettingsClick: () => void;
   onStatusDropdownToggle?: (isOpen: boolean) => void;
+  onUsageStatusChange?: (newStatus: UsageStatus | null) => void;
 }
 
 export default function ChatNavigation({
@@ -29,7 +30,8 @@ export default function ChatNavigation({
   usageStatus,
   sessionId,
   onSettingsClick,
-  onStatusDropdownToggle
+  onStatusDropdownToggle,
+  onUsageStatusChange
 }: ChatNavigationProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -120,6 +122,7 @@ export default function ChatNavigation({
                   sessionId={sessionId}
                   onSettingsClick={onSettingsClick}
                   onDropdownToggle={onStatusDropdownToggle}
+                  onUsageStatusChange={onUsageStatusChange}
                 />
               </div>
 

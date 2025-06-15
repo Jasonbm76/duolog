@@ -5,6 +5,7 @@ import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircl
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import DebugResetButton from '@/components/DebugResetButton';
 
 interface UsageStatus {
   used: number;
@@ -19,6 +20,7 @@ interface UnifiedStatusBarProps {
   sessionId: string;
   onSettingsClick: () => void;
   className?: string;
+  onUsageStatusChange?: (newStatus: UsageStatus | null) => void;
 }
 
 export default function UnifiedStatusBar({ 
@@ -27,7 +29,8 @@ export default function UnifiedStatusBar({
   usageStatus, 
   sessionId,
   onSettingsClick,
-  className 
+  className,
+  onUsageStatusChange
 }: UnifiedStatusBarProps) {
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
@@ -49,7 +52,12 @@ export default function UnifiedStatusBar({
   }, [conversationId, isMockMode]);
 
   const handleResetUsage = async () => {
+    console.log('🔴 [UnifiedStatusBar] RESET BUTTON CLICKED - handleResetUsage called!');
+    console.log('🔴 [UnifiedStatusBar] NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔴 [UnifiedStatusBar] Event handler is working!');
+    
     try {
+      console.log('🔄 [UnifiedStatusBar] Starting reset usage...');
       const response = await fetch('/api/dev/reset-usage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,12 +65,20 @@ export default function UnifiedStatusBar({
       });
       
       const result = await response.json();
+      console.log('[UnifiedStatusBar] Reset API response:', result);
       
       if (response.ok) {
         if (result.success) {
           toast.success(result.message || 'Usage counter reset!');
-          // Trigger a refresh of usage status in parent component
-          window.location.reload(); // Simple way to refresh usage status
+          
+          // Add a small delay to ensure database transaction is committed
+          console.log('⏳ [UnifiedStatusBar] Waiting for database commit...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Refresh usage status without full page reload
+          console.log('🔄 [UnifiedStatusBar] Refreshing usage status...');
+          await refreshUsageStatus();
+          console.log('✅ [UnifiedStatusBar] Reset workflow completed');
         } else {
           toast.info(result.message || 'Database not configured');
         }
@@ -72,6 +88,58 @@ export default function UnifiedStatusBar({
     } catch (error) {
       console.error('Failed to reset usage:', error);
       toast.error('Network error - failed to reset usage');
+    }
+  };
+
+  const refreshUsageStatus = async () => {
+    try {
+      console.log('🔄 [UnifiedStatusBar] Refreshing usage status with identifiers...');
+      
+      // Import fingerprinting utilities (dynamic import for client-side only)
+      const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
+      const identifiers = createUserIdentifier();
+      
+      console.log('[UnifiedStatusBar] Generated identifiers:', {
+        fingerprint: identifiers.fingerprint,
+        persistentId: identifiers.persistentId,
+        sessionId
+      });
+      
+      const params = new URLSearchParams({
+        sessionId,
+        fingerprint: identifiers.fingerprint,
+        persistentId: identifiers.persistentId,
+      });
+
+      // Check for user keys in localStorage and include them
+      try {
+        const { SecureStorage } = await import('@/lib/utils/encryption');
+        const stored = await SecureStorage.getItem('duolog-api-keys');
+        if (stored) {
+          const userKeys = JSON.parse(stored);
+          if (userKeys.openai || userKeys.anthropic) {
+            params.append('userKeys', JSON.stringify(userKeys));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user keys for refresh:', error);
+      }
+      
+      const apiUrl = `/api/chat/usage?${params}`;
+      console.log('[UnifiedStatusBar] Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[UnifiedStatusBar] Usage API response:', data);
+        console.log('[UnifiedStatusBar] Calling onUsageStatusChange with:', data);
+        onUsageStatusChange?.(data);
+        console.log('✅ [UnifiedStatusBar] Usage status refresh completed');
+      } else {
+        console.error('[UnifiedStatusBar] Usage API request failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to refresh usage status:', error);
     }
   };
 
@@ -213,16 +281,54 @@ export default function UnifiedStatusBar({
                     </div>
                   </div>
 
-                  {/* Reset button */}
-                  {process.env.NODE_ENV === 'development' && (
+                  {/* Reset button - Always show in development or when running locally */}
+                  {/* Always show reset button with enhanced debugging */}
+                  <div className="space-y-2">
                     <button
-                      onClick={handleResetUsage}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🔴 [UnifiedStatusBar] RESET BUTTON CLICKED!', e);
+                        console.log('🔴 [UnifiedStatusBar] Event target:', e.target);
+                        console.log('🔴 [UnifiedStatusBar] Environment:', {
+                          NODE_ENV: process.env.NODE_ENV,
+                          hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side',
+                          location: typeof window !== 'undefined' ? window.location.href : 'server-side'
+                        });
+                        console.log('🔴 [UnifiedStatusBar] About to call handleResetUsage...');
+                        handleResetUsage();
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium w-full"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Reset Usage
                     </button>
-                  )}
+                    
+                    {/* Debug test button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🟢 [UnifiedStatusBar] DEBUG: Simple click test worked!');
+                        alert('UnifiedStatusBar debug button clicked! Check console.');
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-error/10 border border-error/25 text-error rounded-lg hover:bg-error/20 transition-all duration-200 text-sm font-medium w-full"
+                    >
+                      🧪 Debug Test (Mobile)
+                    </button>
+                  </div>
+                  
+                  {/* Debug info */}
+                  <div className="text-xs text-warning/70 p-2 bg-warning/5 rounded mt-2">
+                    NODE_ENV: {process.env.NODE_ENV || 'undefined'}<br/>
+                    Hostname: {typeof window !== 'undefined' ? window.location.hostname : 'server'}<br/>
+                    Show Reset: {(process.env.NODE_ENV === 'development' || typeof window !== 'undefined' && window.location.hostname === 'localhost') ? 'YES' : 'NO'}
+                  </div>
+                  
+                  {/* Always show debug button for testing */}
+                  <div className="mt-3">
+                    <DebugResetButton />
+                  </div>
                 </div>
               )}
 

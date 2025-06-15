@@ -47,7 +47,7 @@ interface UsageRecord {
 }
 
 class RobustUsageTracker {
-  private readonly maxFreeConversations = 5;
+  private readonly maxFreeConversations = 3;
   private readonly maxDailyRequests = 50; // Additional protection
 
   // Create composite user identifier from multiple factors
