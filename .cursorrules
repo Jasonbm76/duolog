@@ -7,6 +7,9 @@
 ## 🔥 Critical Rules - READ FIRST
 See: .cursor/rules/critical.md
 
+## 🛡️ Database Safety - AUTOMATED PROTECTION
+See: .cursor/rules/database-safety.md
+
 ## 🛠️ Technology Stack
 See: .cursor/rules/tech-stack.md
 
@@ -29,5 +32,7 @@ See: .cursor/rules/performance.md
 See: .cursor/rules/ui-styling.md
 
 ---
+
+⚠️ **CRITICAL**: Always import safety functions from `@/lib/environment` before database operations.
 
 Please respond 📕 ✅ I have read and understand all rules from the files listed above.

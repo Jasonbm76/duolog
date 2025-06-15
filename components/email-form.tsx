@@ -22,7 +22,7 @@ export default function EmailForm() {
   const onSubmit = async (data: FormData) => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log("Email captured:", data.email)
+    //console.log("Email captured:", data.email)
     setIsSubmitted(true)
   }
 

@@ -21,7 +21,7 @@ export interface WelcomeEmailData {
 export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmailData) {
   try {
     const { data, error } = await resend.emails.send({
-      from: RESEND_FROM_ADDRESS,
+      from: RESEND_FROM_ADDRESS!,
       to: email,
       subject: 'Welcome to DuoLog.ai - Early Access',
       html: `

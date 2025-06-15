@@ -229,6 +229,39 @@ supabase db push --local  # Only with explicit permission
 - **ALWAYS** use `--local` flag for local database operations
 - **PRESERVE** all existing data - migrations cannot rebuild databases
 
+### ✅ **Environment Detection & Protection**
+
+**MANDATORY: Always check environment before database operations**
+
+```typescript
+import { isProduction, preventDestructiveOps } from '@/lib/environment';
+
+// ❌ FORBIDDEN - No environment check
+await supabase.from('users').delete().match({});
+
+// ✅ REQUIRED - Environment protection
+preventDestructiveOps('bulk delete operation');
+await supabase.from('users').delete().match({});
+```
+
+### ✅ **Script Safety Wrapper Usage**
+
+```bash
+# ❌ FORBIDDEN - Direct dangerous commands
+supabase db reset
+npx supabase db reset
+
+# ✅ REQUIRED - Use safety-wrapped commands
+./scripts/db-safety.sh && supabase db reset --local
+npm run db:reset:local  # Already includes safety check
+```
+
+#### **Environment Safety Rules:**
+- **ALWAYS** use environment detection before destructive operations
+- **NEVER** bypass safety checks "just this once"
+- **ALWAYS** use the safety script wrapper for CLI operations
+- **VERIFY** environment context in all database-related code
+
 ### ✅ **Environment Context Awareness**
 
 ```bash

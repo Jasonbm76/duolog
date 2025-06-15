@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
@@ -6,7 +6,31 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { MessageSquare, Sparkles, Users, Zap, Home, Menu, X } from "lucide-react"
 import { useState, useEffect } from "react"
-export default function Navigation() {
+import StatusButton from "@/components/StatusButton"
+
+interface UsageStatus {
+  used: number;
+  limit: number;
+  hasOwnKeys: boolean;
+}
+
+interface ChatNavigationProps {
+  conversationId?: string;
+  isMockMode: boolean;
+  usageStatus: UsageStatus | null;
+  sessionId: string;
+  onSettingsClick: () => void;
+  onStatusDropdownToggle?: (isOpen: boolean) => void;
+}
+
+export default function ChatNavigation({
+  conversationId,
+  isMockMode,
+  usageStatus,
+  sessionId,
+  onSettingsClick,
+  onStatusDropdownToggle
+}: ChatNavigationProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -67,7 +91,7 @@ export default function Navigation() {
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden lg:flex items-center gap-6">
+              <div className="hidden lg:flex items-center gap-4">
                 {navItems.map(({ href, label, icon: Icon }) => (
                   <Link 
                     key={href}
@@ -88,7 +112,15 @@ export default function Navigation() {
                   </div>
                 </Link>
 
-
+                {/* Status Button */}
+                <StatusButton 
+                  conversationId={conversationId}
+                  isMockMode={isMockMode}
+                  usageStatus={usageStatus}
+                  sessionId={sessionId}
+                  onSettingsClick={onSettingsClick}
+                  onDropdownToggle={onStatusDropdownToggle}
+                />
               </div>
 
               {/* Mobile Menu Button */}
@@ -162,4 +194,4 @@ export default function Navigation() {
       </AnimatePresence>
     </>
   )
-}
+} 

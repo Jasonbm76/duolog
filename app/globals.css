@@ -96,6 +96,88 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Custom scrollbar styles for chat area */
+  .chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Mobile Navigation Styles */
+  .mobile-nav-item {
+    @apply flex items-center gap-3 px-4 py-3 text-on-dark/80 hover:text-on-dark hover:bg-white/5 rounded-lg transition-all duration-300;
+  }
+  
+  .mobile-nav-item-active {
+    @apply text-on-dark bg-white/10;
+  }
+  
+  .mobile-nav-item-primary {
+    @apply flex items-center w-full px-4 py-3 text-on-dark bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-primary/20;
+  }
+  
+  .mobile-nav-item-primary-active {
+    @apply bg-primary/20 border-primary/40 shadow-lg shadow-primary/20;
+  }
+
+  /* Responsive Navigation Adjustments */
+  @media (max-width: 1024px) {
+    .nav-item {
+      @apply text-xs px-3 py-2;
+    }
+    
+    .nav-item-primary {
+      @apply text-xs px-4 py-2;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    /* Ensure mobile menu doesn't interfere with page content */
+    .mobile-menu-open {
+      overflow: hidden;
+    }
+    
+    /* Hide common development tool overlays on mobile */
+    [data-nextjs-toast-errors-parent],
+    [data-nextjs-dialog-overlay],
+    .__next-dev-overlay-left,
+    .__next-dev-overlay-right,
+    .next-dev-overlay,
+    [id*="next-dev"],
+    [class*="next-dev"],
+    [data-testid*="next"],
+    nextjs-portals,
+    nextjs-portals *,
+    [data-nextjs-toast="true"],
+    [data-nextjs-toast-wrapper="true"],
+    [data-next-badge-root="true"],
+    [data-next-badge="true"],
+    [data-nextjs-dev-tools-menu],
+    button[data-nextjs-dev-tools-button="true"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  }
 }
 
 :root {
@@ -112,10 +194,25 @@
 body {
   font-family: var(--font-inter);
   background: #0d1117;
-  background-image: radial-gradient(circle at 20% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+  background-image: 
+    linear-gradient(to top, rgba(29, 78, 216, 0.8) 0%, rgba(29, 78, 216, 0.1) 20vh, transparent 25vh),
+    radial-gradient(circle at 20% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
   min-height: 100vh;
+}
+
+/* Mobile-specific body styling */
+@media (max-width: 768px) {
+  body {
+    background-image: 
+      linear-gradient(to top, rgba(29, 78, 216, 0.6) 0%, rgba(29, 78, 216, 0.05) 10vh, transparent 20vh),
+      radial-gradient(circle at 30% 40%, rgba(37, 99, 235, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+  }
 }
 
 .glass-card {
@@ -186,6 +283,21 @@ body {
 
 .float-animation {
   animation: float 6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+.breathe-animation {
+  animation: breathe 2s ease-in-out infinite;
 }
 
 /* Admin layout consistency */

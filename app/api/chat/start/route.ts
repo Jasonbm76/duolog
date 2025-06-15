@@ -1,87 +1,121 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { rateLimiter } from '@/lib/services/rate-limiter';
-import { z } from 'zod';
-
-const startChatSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required').max(1000, 'Prompt too long')
-});
+import { NextRequest } from 'next/server';
+import { robustUsageTracker } from '@/lib/services/robust-usage-tracker';
+import { extractIPAddress } from '@/lib/utils/ip-utils';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check rate limit first
-    const rateLimitCheck = rateLimiter.canAttempt(request);
-    
-    if (!rateLimitCheck.allowed) {
-      const timeUntilReset = rateLimitCheck.resetTime ? 
-        Math.ceil((rateLimitCheck.resetTime.getTime() - Date.now()) / (1000 * 60 * 60)) : 24;
-      
-      return NextResponse.json(
-        { 
-          error: 'Rate limit exceeded',
-          message: `You've reached the 3 conversation limit. Try again in ${timeUntilReset} hours.`,
-          rateLimitExceeded: true,
-          resetTime: rateLimitCheck.resetTime
-        },
-        { status: 429 }
-      );
+    const body = await request.json();
+    const { 
+      prompt, 
+      sessionId, 
+      fingerprint, 
+      persistentId, 
+      email,
+      userKeys 
+    } = body;
+
+    // Validate required fields
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'Valid prompt is required' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    // Validate request body
-    const body = await request.json();
-    const { prompt } = startChatSchema.parse(body);
+    // Extract IP address
+    const ip = extractIPAddress(request);
 
-    // Record the attempt
-    rateLimiter.recordAttempt(request);
+    // Check if user has their own API keys - if so, bypass usage limits
+    const hasOwnKeys = Boolean(userKeys?.openai || userKeys?.anthropic);
+    
+    if (!hasOwnKeys) {
+      // Create user identifiers for usage tracking
+      const identifiers = {
+        composite: '', // Will be set by tracker
+        ip,
+        fingerprint: fingerprint || undefined,
+        persistentId: persistentId || undefined,
+        sessionId: sessionId || undefined,
+      };
 
-    // Get updated status
-    const status = rateLimiter.getStatus(request);
+      // Check if user can start a conversation
+      const limitCheck = await robustUsageTracker.checkLimit(request, identifiers, email);
 
-    // Return conversation started successfully
-    return NextResponse.json({
-      success: true,
-      conversationId: `conv-${Date.now()}`,
-      message: 'Conversation started successfully',
-      rateLimit: {
-        remaining: status.remaining,
-        resetTime: status.resetTime
+      if (!limitCheck.allowed) {
+        return new Response(JSON.stringify({
+          error: 'Conversation limit reached',
+          reason: limitCheck.reason,
+          used: limitCheck.used,
+          limit: limitCheck.limit,
+        }), {
+          status: 429, // Too Many Requests
+          headers: { 
+            'Content-Type': 'application/json',
+            'Retry-After': '86400', // 24 hours
+          },
+        });
       }
-    });
+
+      // Increment usage counter for users without their own keys
+      await robustUsageTracker.increment(request, identifiers, email);
+
+      // Return success response with usage tracking
+      return new Response(JSON.stringify({
+        success: true,
+        sessionId: sessionId,
+        message: 'Conversation started successfully',
+        usage: {
+          used: limitCheck.used + 1,
+          limit: limitCheck.limit,
+        },
+      }), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
+    } else {
+      // User has their own keys - no usage limits
+      console.log('User provided their own API keys - bypassing usage limits');
+      
+      // Return success response without usage tracking
+      return new Response(JSON.stringify({
+        success: true,
+        sessionId: sessionId,
+        message: 'Conversation started successfully with your API keys',
+        usage: {
+          used: 0,
+          limit: 999, // Unlimited for users with their own keys
+        },
+      }), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
+    }
 
   } catch (error) {
-    console.error('Error starting chat:', error);
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Conversation start API error:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error' 
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    // Return current rate limit status
-    const status = rateLimiter.getStatus(request);
-    
-    return NextResponse.json({
-      rateLimit: {
-        attempts: status.attempts,
-        remaining: status.remaining,
-        resetTime: status.resetTime,
-        maxAttempts: 3
-      }
-    });
-  } catch (error) {
-    console.error('Error getting rate limit status:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+// Handle OPTIONS for CORS
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }

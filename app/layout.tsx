@@ -35,7 +35,18 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         {children}
-        <Toaster position="top-center" />
+        <Toaster 
+          position="bottom-right" 
+          toastOptions={{
+            style: {
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              marginBottom: '120px', // Above the input area
+            },
+          }}
+        />
       </body>
     </html>
   )

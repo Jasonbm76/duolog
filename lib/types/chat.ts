@@ -5,6 +5,9 @@ export interface Message {
   timestamp: Date;
   round: number;
   isStreaming?: boolean;
+  inputPrompt?: string;
+  processingStatus?: ProcessingStatus;
+  isFinalSynthesis?: boolean;
 }
 
 export interface Conversation {
@@ -31,6 +34,8 @@ export interface APIMessage {
   role: MessageRole;
   content: string;
   round: number;
+  inputPrompt?: string;
+  processingStatus?: ProcessingStatus;
 }
 
 export interface StartConversationRequest {
@@ -51,3 +56,13 @@ export interface ContinueConversationResponse {
   messages: APIMessage[];
   isComplete: boolean;
 }
+
+// Processing status for dynamic thinking indicators
+export type ProcessingStatus = 
+  | 'thinking'
+  | 'analyzing'
+  | 'generating'
+  | 'reviewing'
+  | 'finalizing'
+  | 'complete'
+  | 'error';

@@ -173,6 +173,66 @@ module.exports = {
         "on-light": "#000000", // Text on light backgrounds
         "on-dark-muted": "#D4D4D4", // Muted text on dark (neutral-300)
         "on-light-muted": "#52525B", // Muted text on light (neutral-600)
+        
+        // AI Brand Colors - Claude/Anthropic
+        claude: {
+          50: "#fdf4ff",   // Very light purple tint
+          100: "#fae8ff",  // Light purple background
+          200: "#f3d2ff",  // Soft purple
+          300: "#e9b3ff",  // Light purple accent
+          400: "#d280ff",  // Medium purple
+          500: "#cc6633",  // Anthropic brand orange (primary)
+          600: "#b85c2e",  // Darker orange
+          700: "#9d4f27",  // Deep orange
+          800: "#7a3e1f",  // Very dark orange
+          900: "#5c2f17",  // Darkest orange
+          950: "#3d1f0f",  // Almost black orange
+        },
+        
+        // Alternative Claude Purple Theme
+        claudePurple: {
+          50: "#fdf4ff",
+          100: "#fae8ff", 
+          200: "#f3d2ff",
+          300: "#e9b3ff",
+          400: "#d280ff",
+          500: "#b855ff",  // Primary Claude purple
+          600: "#9f3fff",  // Medium purple  
+          700: "#8b2fff",  // Darker purple
+          800: "#6b1f99",  // Deep purple
+          900: "#4c1566",  // Very dark purple
+          950: "#2d0d3d",  // Darkest purple
+        },
+        
+        // AI Brand Colors - OpenAI/ChatGPT
+        openai: {
+          50: "#f0fdfa",   // Very light teal tint
+          100: "#ccfbf1",  // Light teal background
+          200: "#99f6e4",  // Soft teal
+          300: "#5eead4",  // Light teal accent
+          400: "#2dd4bf",  // Medium teal
+          500: "#10b981",  // OpenAI brand teal (primary)
+          600: "#059669",  // Darker teal
+          700: "#047857",  // Deep teal
+          800: "#065f46",  // Very dark teal
+          900: "#064e3b",  // Darkest teal
+          950: "#042f2e",  // Almost black teal
+        },
+        
+        // Alternative OpenAI Green Theme
+        openaiGreen: {
+          50: "#f0fdf4",
+          100: "#dcfce7",
+          200: "#bbf7d0", 
+          300: "#86efac",
+          400: "#4ade80",
+          500: "#22c55e",  // Primary OpenAI green
+          600: "#16a34a",  // Medium green
+          700: "#15803d",  // Darker green
+          800: "#166534",  // Deep green
+          900: "#14532d",  // Very dark green
+          950: "#052e16",  // Darkest green
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -188,10 +248,36 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "breathe": {
+          "0%, 100%": { 
+            transform: "scale(1)",
+            opacity: "0.6"
+          },
+          "50%": { 
+            transform: "scale(1.1)",
+            opacity: "0.9"
+          },
+        },
+        "breathe-glow": {
+          "0%, 100%": { 
+            backgroundColor: "#3B82F6",
+            transform: "scale(1)",
+            opacity: "0.4",
+            boxShadow: "0 0 0 0 rgba(59, 130, 246, 0.4)"
+          },
+          "50%": { 
+            backgroundColor: "#8B5CF6",
+            transform: "scale(1.15)",
+            opacity: "0.8",
+            boxShadow: "0 0 20px 8px rgba(139, 92, 246, 0.6)"
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "breathe": "breathe 2s ease-in-out infinite",
+        "breathe-glow": "breathe-glow 1.8s ease-in-out infinite",
       },
     },
   },

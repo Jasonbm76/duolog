@@ -18,7 +18,7 @@ export default function ConversationHeader({
 }: ConversationHeaderProps) {
   if (!conversation) {
     return (
-      <div className="flex-shrink-0 glass-card p-6 mb-6 mt-8">
+      <div className="glass-card p-6 m-4">
         <h1 className="text-2xl font-bold text-on-dark">AI Collaboration Workspace</h1>
         <p className="text-on-dark mt-1">Claude and GPT-4 working together to perfect your prompt</p>
       </div>
@@ -29,7 +29,7 @@ export default function ConversationHeader({
   const isComplete = conversation.status === 'completed';
 
   return (
-    <div className="flex-shrink-0 glass-card p-6 mb-6 mt-8">
+    <div className="glass-card p-6 m-4">
       {/* Header Actions */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">

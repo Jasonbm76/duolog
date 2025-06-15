@@ -13,7 +13,22 @@
       "Bash(find:*)",
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(killall:*)",
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(touch:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(psql:*)",
+      "Bash(open:*)",
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(./scripts/db-safety.sh:*)",
+      "Bash(NODE_ENV=production ./scripts/db-safety.sh)",
+      "Bash(node:*)",
+      "Bash(NODE_ENV=production node -e \"console.log('Testing production block...'); if (process.env.NODE_ENV === 'production') { console.log('❌ PRODUCTION DETECTED - Would block destructive operations'); process.exit(1); }\")"
     ],
     "deny": []
   }
