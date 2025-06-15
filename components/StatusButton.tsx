@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
@@ -34,11 +34,39 @@ export default function StatusButton({
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when dropdown state changes
   useEffect(() => {
     onDropdownToggle?.(isExpanded);
   }, [isExpanded, onDropdownToggle]);
+
+  // Handle outside clicks and escape key
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isExpanded]);
 
   // Update token tracking
   useEffect(() => {
@@ -174,7 +202,10 @@ export default function StatusButton({
       {isExpanded && (
         <>
           {/* Dropdown panel */}
-          <div className="absolute top-full right-0 mt-8 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-background/95 backdrop-blur-xl border border-white/10 shadow-xl z-[110]">
+          <div 
+            ref={dropdownRef}
+            className="absolute top-full right-0 mt-8 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-background/95 backdrop-blur-xl border border-white/10 shadow-xl z-[110]"
+          >
             <div className="p-4">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,34 @@ export default function UnifiedStatusBar({
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle outside clicks and escape key
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isExpanded]);
 
   // Update token tracking
   useEffect(() => {
@@ -202,14 +230,11 @@ export default function UnifiedStatusBar({
       {/* Expanded popdown */}
       {isExpanded && (
         <>
-          {/* Backdrop with blur */}
-          <div 
-            className="fixed inset-0 z-[60] lg:bg-transparent bg-black/20 backdrop-blur-sm" 
-            onClick={() => setIsExpanded(false)}
-          />
-          
           {/* Popdown panel */}
-          <div className="lg:absolute lg:top-full lg:right-0 lg:mt-2 lg:w-80 lg:max-w-[calc(100vw-2rem)] lg:rounded-xl lg:-translate-x-[calc(100%-2.5rem)] fixed top-[100px] left-0 right-0 w-full rounded-none bg-background/95 backdrop-blur-xl border-b border-white/10 lg:border lg:border-white/10 shadow-xl z-[70]">
+          <div 
+            ref={dropdownRef}
+            className="lg:absolute lg:top-full lg:right-0 lg:mt-2 lg:w-80 lg:max-w-[calc(100vw-2rem)] lg:rounded-xl lg:-translate-x-[calc(100%-2.5rem)] fixed top-[100px] left-0 right-0 w-full rounded-none bg-background/95 backdrop-blur-xl border-b border-white/10 lg:border lg:border-white/10 shadow-xl z-[70]"
+          >
             <div className="p-4">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
