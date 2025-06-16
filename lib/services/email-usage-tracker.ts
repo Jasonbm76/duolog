@@ -436,10 +436,9 @@ class EmailUsageTracker {
 
       // Send verification email
       const { emailService } = await import('./email-service');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                     process.env.NEXT_PUBLIC_BASE_URL || 
-                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                     'http://localhost:5001';
+      const baseUrl = process.env.APP_URL || 
+                     process.env.NEXT_PUBLIC_APP_URL || 
+                     'https://duolog.ai';
       const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
       
       const emailResult = await emailService.sendVerificationEmail({

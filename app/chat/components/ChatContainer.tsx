@@ -276,8 +276,6 @@ export default function ChatContainer() {
         }, 100);
         setPendingPrompt('');
       }
-      
-      toast.success('Email verified! Starting your conversation...');
     } catch (error) {
       console.error('Email submission error:', error);
       toast.error('Something went wrong. Please try again.');

@@ -47,18 +47,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Send admin verification email
-    console.log('🔍 Environment variables check:', {
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-      VERCEL_URL: process.env.VERCEL_URL,
-    });
-    
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   process.env.NEXT_PUBLIC_BASE_URL || 
-                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                   'http://localhost:5001';
+    // Use regular environment variables for API routes, not NEXT_PUBLIC_*
+    const baseUrl = process.env.APP_URL || 
+                   'https://duolog.ai'; // Fallback to production URL
                    
-    console.log('🔗 Admin verification URL being used:', baseUrl);
     const verificationUrl = `${baseUrl}/admin/verify?token=${tokenResult.token}`;
     
     const emailResult = await emailService.sendEmail({
@@ -103,7 +95,7 @@ export async function POST(request: NextRequest) {
 
 function generateAdminVerificationEmailHTML({ email, verificationUrl }: { email: string; verificationUrl: string }) {
   // Use the same email service template with admin-specific content
-  const baseUrl = 'https://duolog.ai';
+  const baseUrl = process.env.APP_URL || 'https://duolog.ai';
   
   return `
 <!DOCTYPE html>

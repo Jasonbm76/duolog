@@ -102,11 +102,13 @@ export default function EmailCaptureModal({
         // Email already verified, proceed directly
         toast.success('Email already verified! Starting conversation...');
         await onSubmit(cleanEmail);
+        return; // Exit early since onSubmit handles closing the modal
       } else if (data.success) {
         if (data.devBypass) {
           // Development bypass - proceed directly
           toast.success('Development bypass: Email auto-verified');
           await onSubmit(cleanEmail);
+          return; // Exit early since onSubmit handles closing the modal
         } else {
           // Production flow - show verification waiting
           toast.success('Verification email sent! Check your inbox.');
