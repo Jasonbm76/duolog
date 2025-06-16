@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -96,6 +96,43 @@ export default function AdminLoginPage() {
     }
   };
 
+  // Check for verification completion when on the email sent screen
+  useEffect(() => {
+    if (!emailSent || !email) return;
+
+    const checkVerificationStatus = async () => {
+      // Check if admin is verified locally
+      if (AdminAuth.isAdminVerifiedLocally(email)) {
+        try {
+          // Create session and redirect
+          const response = await fetch('/api/admin/auth/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            toast.success('Verification detected! Redirecting to admin panel...');
+            router.push('/admin');
+          }
+        } catch (error) {
+          console.error('Error creating session after verification:', error);
+        }
+      }
+    };
+
+    // Check immediately
+    checkVerificationStatus();
+
+    // Then check every 2 seconds
+    const interval = setInterval(checkVerificationStatus, 2000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, [emailSent, email, router]);
+
   if (emailSent) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -126,15 +163,15 @@ export default function AdminLoginPage() {
                   ⚠️ Important Instructions
                 </p>
                 <ul className="text-on-dark-muted text-sm text-left space-y-1">
-                  <li>• Click the link in the email to access admin panel</li>
-                  <li>• Keep this tab open - you'll be redirected here after verification</li>
-                  <li>• Do NOT navigate away or close this page</li>
+                  <li>• Click the link in the email to verify your identity</li>
+                  <li>• Keep this tab open - it will auto-detect verification</li>
+                  <li>• You'll be automatically redirected to the admin panel</li>
                   <li>• Link expires in 30 minutes for security</li>
                 </ul>
               </div>
               
               <p className="text-xs text-on-dark-muted">
-                After clicking the email link, you'll be automatically redirected to the admin dashboard.
+                This page automatically checks for verification completion every few seconds.
               </p>
               
               <div className="pt-4">

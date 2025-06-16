@@ -96,12 +96,15 @@ export default function EmailCaptureModal({
       });
 
       const data = await response.json();
+      console.log('Email verification response:', { status: response.status, data });
 
       // Handle already verified case first (even with 400 status)
       if (data.alreadyVerified) {
+        console.log('Email already verified, calling onSubmit...');
         // Email already verified, proceed directly
         toast.success('Email already verified! Starting conversation...');
         await onSubmit(cleanEmail);
+        console.log('onSubmit completed, should close modal');
         return; // Exit early since onSubmit handles closing the modal
       } else if (data.success) {
         if (data.devBypass) {

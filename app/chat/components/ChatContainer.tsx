@@ -259,12 +259,14 @@ export default function ChatContainer() {
 
   // Handle email submission from modal (when verified)
   const handleEmailSubmit = async (email: string) => {
+    console.log('handleEmailSubmit called with email:', email);
     try {
       setUserEmail(email);
       // Save verified email to localStorage for future visits
       if (typeof window !== 'undefined') {
         localStorage.setItem('user_email', email);
       }
+      console.log('Closing email capture modal...');
       setShowEmailCapture(false);
       setShowVerificationWaiting(false);
       

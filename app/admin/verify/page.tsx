@@ -49,12 +49,7 @@ export default function AdminVerifyPage() {
           AdminAuth.markAdminVerifiedLocally(data.email);
         }
         
-        toast.success('Admin access granted! Redirecting...');
-        
-        // Redirect to admin dashboard after a brief delay
-        setTimeout(() => {
-          router.push('/admin');
-        }, 2000);
+        toast.success('Admin access granted!');
       } else {
         setState('error');
         setError(data.error || 'Verification failed');
@@ -112,17 +107,35 @@ export default function AdminVerifyPage() {
                 {email}
               </p>
             )}
-            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 mb-4">
-              <p className="text-warning text-sm font-medium">
-                🔒 Admin Session Active
+            <div className="bg-success/10 border border-success/20 rounded-lg p-4 mb-4">
+              <p className="text-success text-sm font-medium">
+                ✅ Verification Complete
               </p>
               <p className="text-on-dark-muted text-sm mt-1">
-                Your admin session will remain active across all browser tabs until you logout or it expires in 7 days.
+                Your admin session is now active across all browser tabs and will remain valid for 7 days.
               </p>
             </div>
-            <p className="text-sm text-on-dark-muted">
-              Redirecting you to the admin dashboard...
-            </p>
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
+              <p className="text-primary text-sm font-medium">
+                📋 Next Steps
+              </p>
+              <p className="text-on-dark-muted text-sm mt-1">
+                You can now close this tab and return to the admin login page. You should be automatically logged in.
+              </p>
+            </div>
+            <Button
+              onClick={() => window.close()}
+              className="w-full bg-primary hover:bg-primary/90 text-white mb-3"
+            >
+              Close This Tab
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin')}
+              className="w-full"
+            >
+              Go to Admin Dashboard
+            </Button>
           </motion.div>
         );
 
