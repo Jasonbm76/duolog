@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Send admin verification email
-    const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5001'}/admin/verify?token=${tokenResult.token}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:5001';
+    const verificationUrl = `${baseUrl}/admin/verify?token=${tokenResult.token}`;
     
     const emailResult = await emailService.sendEmail({
       to: cleanEmail,

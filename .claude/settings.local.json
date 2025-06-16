@@ -53,7 +53,8 @@
       "Bash(supabase migration list:*)",
       "Bash(supabase migration up:*)",
       "Bash(supabase db remote commit:*)",
-      "Bash(supabase db diff:*)"
+      "Bash(supabase db diff:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }
