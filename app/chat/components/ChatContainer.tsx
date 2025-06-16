@@ -164,14 +164,12 @@ export default function ChatContainer() {
 
         // Try to restore saved email from localStorage
         const savedEmail = localStorage.getItem('user_email');
-        console.log('Checking saved email from localStorage:', savedEmail);
         if (savedEmail && isValidEmail(savedEmail)) {
           try {
             // Verify the email is still valid and verified on the server
             const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
             const identifiers = createUserIdentifier();
             
-            console.log('Validating saved email with server...');
             const response = await fetch('/api/chat/email-usage', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -184,19 +182,15 @@ export default function ChatContainer() {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('Email validation result:', result);
               if (result.emailVerified) {
                 // Email is verified, restore it
                 setUserEmail(savedEmail);
-                console.log('✅ Restored verified email from localStorage:', savedEmail);
               } else {
                 // Email exists but not verified, remove from localStorage
                 localStorage.removeItem('user_email');
-                console.log('❌ Removed unverified email from localStorage');
               }
             } else {
               // API error, remove email from localStorage to be safe
-              console.log('❌ API error during email validation, removing from localStorage');
               localStorage.removeItem('user_email');
             }
           } catch (error) {
@@ -205,7 +199,7 @@ export default function ChatContainer() {
             localStorage.removeItem('user_email');
           }
         } else if (savedEmail) {
-          console.log('❌ Invalid email format in localStorage, removing:', savedEmail);
+          // Invalid email format, remove from localStorage
           localStorage.removeItem('user_email');
         }
       }
@@ -622,6 +616,10 @@ export default function ChatContainer() {
     processingRef.current = true;
 
     try {
+      // Create user identifiers for usage tracking
+      const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
+      const identifiers = createUserIdentifier();
+
       // Continue the conversation in state
       continueConversation(followUpPrompt);
       setCurrentRound(0);
@@ -639,6 +637,8 @@ export default function ChatContainer() {
       await service.continueConversation({
         prompt: followUpPrompt,
         sessionId,
+        email: userEmail,
+        fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
