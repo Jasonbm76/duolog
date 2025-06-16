@@ -103,7 +103,8 @@ export default function PromptInput({
             error: event.error,
             message: event.message,
             timeStamp: event.timeStamp,
-            type: event.type
+            type: event.type,
+            currentTarget: event.currentTarget
           });
           
           setIsRecording(false);
@@ -118,37 +119,37 @@ export default function PromptInput({
           
           switch (event.error) {
             case 'network':
-              // In development (localhost), this is often a Chrome security restriction, not a real network issue
+              // Network errors are unfortunately common with Web Speech API
+              // This happens due to various reasons: Chrome policies, Google service issues, network connectivity
+              setSpeechServiceAvailable(false);
+              setSpeechError('Voice input temporarily unavailable');
+              
               const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
               
               if (isLocalhost) {
-                setSpeechError('Voice input not available in development');
-                toast.error('Voice input requires HTTPS in production. Please type your message.', {
+                toast.error('Voice input not available in development environment. Please type your message.', {
                   duration: 4000,
                 });
-                console.warn('Speech recognition network error - Chrome requires HTTPS for speech recognition. This will work in production.');
-                // Don't mark service as unavailable in development - it's expected
-                setSpeechServiceAvailable(false);
+                console.warn('Speech recognition network error in development - expected due to Chrome security policies');
               } else {
-                // In production, this might be a real network issue
-                setSpeechServiceAvailable(false);
-                setSpeechError('Speech service temporarily unavailable');
-                toast.error('Voice input is temporarily unavailable. Please type your message instead.', {
-                  duration: 4000,
+                toast.error('Voice input is experiencing issues. This is a common problem with browser speech recognition. Please type your message instead.', {
+                  duration: 6000,
                 });
-                console.warn('Speech recognition network error in production environment');
-                // Retry after 30 seconds
+                console.warn('Speech recognition network error in production - this is unfortunately common with Web Speech API');
+                
+                // Only retry after a longer period in production
                 setTimeout(() => {
-                  console.log('Re-enabling speech service for retry');
+                  console.log('Re-enabling speech service for retry after network error');
                   setSpeechServiceAvailable(true);
                   setSpeechError(null);
-                }, 30000);
+                }, 5 * 60 * 1000); // 5 minutes instead of 1 minute
               }
               break;
             case 'not-allowed':
               setSpeechError('Microphone access denied');
+              setSpeechServiceAvailable(false);
               console.warn('Speech recognition permission denied');
-              toast.error('Microphone access denied. Please allow microphone access.');
+              toast.error('Microphone access denied. Please allow microphone access in your browser settings.');
               break;
             case 'no-speech':
               // Don't show error for no speech, just stop recording
@@ -158,11 +159,24 @@ export default function PromptInput({
             case 'aborted':
               // User intentionally stopped, don't show error
               setSpeechError(null);
-              console.warn('Speech recognition aborted');
+              console.warn('Speech recognition aborted by user');
+              break;
+            case 'service-not-allowed':
+              setSpeechServiceAvailable(false);
+              setSpeechError('Speech service blocked');
+              toast.error('Speech recognition service is blocked. Please check your browser settings.');
               break;
             default:
               setSpeechError('Speech recognition failed');
+              setSpeechServiceAvailable(false);
               console.warn('Speech recognition error:', event.error);
+              toast.error('Voice input encountered an error. Please try typing instead.');
+              
+              // Re-enable after a short delay for unknown errors
+              setTimeout(() => {
+                setSpeechServiceAvailable(true);
+                setSpeechError(null);
+              }, 30000);
           }
         };
 
@@ -233,7 +247,19 @@ export default function PromptInput({
           } catch (startError) {
             console.error('Failed to start speech recognition:', startError);
             setSpeechError('Speech recognition failed to start');
-            toast.error('Failed to start voice input. Please try typing instead.');
+            setSpeechServiceAvailable(false);
+            
+            // Show user-friendly error message
+            toast.error('Unable to start voice input. Please try typing your message instead.', {
+              duration: 4000,
+            });
+            
+            // Re-enable after a delay for potential retry
+            setTimeout(() => {
+              console.log('Re-enabling speech service after start error');
+              setSpeechServiceAvailable(true);
+              setSpeechError(null);
+            }, 30000);
           }
         }, 100);
       } catch (permissionError) {
@@ -313,9 +339,9 @@ export default function PromptInput({
             aria-label={isRecording ? "Stop recording" : "Start voice input"}
             title={
               !speechSupported 
-                ? "Speech recognition not supported" 
+                ? "Speech recognition not supported in this browser" 
                 : !speechServiceAvailable
-                  ? "Voice input temporarily unavailable"
+                  ? `Voice input unavailable: ${speechError || 'Service temporarily down'}`
                 : isRecording 
                   ? "Click to stop recording" 
                   : "Click to start voice input"
@@ -370,8 +396,12 @@ export default function PromptInput({
                   ? "Listening... Click microphone to stop"
                   : !speechServiceAvailable
                     ? speechError === 'Voice input not available in development'
-                      ? "Press Enter to send, Shift+Enter for new line (voice input requires HTTPS)"
-                      : "Press Enter to send, Shift+Enter for new line (voice input temporarily unavailable)"
+                      ? "Press Enter to send, Shift+Enter for new line (voice unavailable in dev)"
+                      : speechError === 'Voice input temporarily unavailable'
+                        ? "Press Enter to send, Shift+Enter for new line (voice temporarily unavailable)"
+                        : speechError === 'Microphone access denied'
+                          ? "Press Enter to send, Shift+Enter for new line (microphone access needed)"
+                          : "Press Enter to send, Shift+Enter for new line (voice input unavailable)"
                     : "Press Enter to send, Shift+Enter for new line, or use voice input"
             }
           </span>
@@ -397,9 +427,9 @@ export default function PromptInput({
             aria-label={isRecording ? "Stop recording" : "Start voice input"}
             title={
               !speechSupported 
-                ? "Speech recognition not supported" 
+                ? "Speech recognition not supported in this browser" 
                 : !speechServiceAvailable
-                  ? "Voice input temporarily unavailable"
+                  ? `Voice input unavailable: ${speechError || 'Service temporarily down'}`
                 : isRecording 
                   ? "Click to stop recording" 
                   : "Click to start voice input"
