@@ -259,23 +259,19 @@ export default function ChatContainer() {
 
   // Handle email submission from modal (when verified)
   const handleEmailSubmit = async (email: string) => {
-    console.log('handleEmailSubmit called with email:', email);
     try {
       setUserEmail(email);
       // Save verified email to localStorage for future visits
       if (typeof window !== 'undefined') {
         localStorage.setItem('user_email', email);
       }
-      console.log('Closing email capture modal...');
       setShowEmailCapture(false);
       setShowVerificationWaiting(false);
       
       // If there's a pending prompt, start the conversation
       if (pendingPrompt) {
-        // Wait a bit for state to update
-        setTimeout(() => {
-          handleStartConversation(pendingPrompt);
-        }, 100);
+        // Start conversation immediately with the verified email
+        handleStartConversationWithEmail(pendingPrompt, email);
         setPendingPrompt('');
       }
     } catch (error) {
@@ -310,13 +306,10 @@ export default function ChatContainer() {
     console.log('Resending verification email...');
   };
 
-  const handleStartConversation = async (initialPrompt: string) => {
-    if (processingRef.current || !sessionId) return;
-
-    // Check if we have user email - if not, show email capture modal
-    if (!userEmail) {
-      setShowEmailCapture(true);
-      setPendingPrompt(initialPrompt);
+  const handleStartConversationWithEmail = async (initialPrompt: string, emailToUse: string) => {
+    console.log('handleStartConversationWithEmail called with:', { initialPrompt, emailToUse, sessionId });
+    if (processingRef.current || !sessionId) {
+      console.log('Conversation blocked:', { processingRefCurrent: processingRef.current, sessionId });
       return;
     }
 
@@ -333,7 +326,7 @@ export default function ChatContainer() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: userEmail,
+          email: emailToUse,
           fingerprint: identifiers.fingerprint,
           sessionId,
           userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
@@ -382,7 +375,7 @@ export default function ChatContainer() {
       await service.startConversation({
         prompt: initialPrompt,
         sessionId,
-        email: userEmail,
+        email: emailToUse,
         fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
@@ -397,6 +390,159 @@ export default function ChatContainer() {
             console.warn('Duplicate round start detected, ignoring:', roundKey);
             return;
           }
+          lastRoundKeyRef.current = roundKey;
+          
+          // Increment step counter for each AI response
+          stepCounterRef.current = stepCounterRef.current + 1;
+          const currentStepNumber = stepCounterRef.current;
+          breathingStepRef.current = currentStepNumber;
+          isAIActiveRef.current = true; // Mark AI as active
+          setCurrentRound(round);
+          setActiveBreathingRound(currentStepNumber);
+          setTypingAI(model);
+          
+          // Get processing states for this AI and round
+          const roundData = flow.rounds[round - 1];
+          const aiModelKey = model === 'claude' ? 'claude' : 'gpt';
+          const aiResponse = roundData?.[aiModelKey];
+          const processingStates = aiResponse?.processingStates;
+          
+          // Start processing status progression
+          startProcessing(aiModelKey, round, 'thinking');
+          startStatusProgression(aiModelKey, processingStates, () => {
+            // Status progression complete - message will start streaming
+          });
+          
+          // Reset message tracking for this round
+          currentMessageId = generateMessageId(aiModelKey, round);
+          currentMessageContent = '';
+          
+          // Store input prompt for when we create the message
+          currentInputPrompt.current = aiResponse?.inputPrompt || inputPrompt;
+          
+          // Check if this is the final synthesis round
+          isFinalSynthesisRef.current = inputPrompt === 'Creating final synthesis';
+        },
+        onContentChunk: (round: number, model: 'claude' | 'gpt-4', content: string) => {
+          // Create message bubble when content first starts streaming
+          if (currentMessageContent === '' && content.length > 0) {
+            // Clear processing indicators when content starts (but keep breathing animation)
+            setTypingAI(null);
+            stopProcessing();
+            clearProgression();
+            
+            // Force update activeBreathingRound to current step (fix closure issue)
+            setActiveBreathingRound(breathingStepRef.current);
+            
+            // Start accumulating content
+            currentMessageContent = content;
+            
+            // Create the message bubble now that content is streaming
+            const messageData = {
+              role: (model === 'claude' ? 'claude' : 'gpt') as 'claude' | 'gpt',
+              content: content, // Start with the initial content chunk
+              round,
+              isStreaming: true,
+              ...(currentInputPrompt.current && { inputPrompt: currentInputPrompt.current }),
+              ...(isFinalSynthesisRef.current && { isFinalSynthesis: true }),
+            };
+            
+            const newMessage = addMessage(messageData);
+            currentMessageId = newMessage.id; // Store the message ID for updates
+          } else if (currentMessageId) {
+            // Detect if this is cumulative content (mock mode) or incremental (real APIs)
+            const isCumulativeContent = content.startsWith(currentMessageContent);
+            
+            if (isCumulativeContent) {
+              // Mock mode: content contains full message so far, just replace
+              currentMessageContent = content;
+            } else {
+              // Real API mode: content is incremental chunk, accumulate
+              currentMessageContent += content;
+            }
+            
+            // Update message content
+            dispatch({
+              type: 'UPDATE_MESSAGE',
+              payload: { messageId: currentMessageId, content: currentMessageContent },
+            });
+          }
+        },
+        onRoundComplete: (round: number, model: 'claude' | 'gpt-4') => {
+          // Complete the message by round and role instead of tracking IDs
+          const role = model === 'claude' ? 'claude' : 'gpt';
+          dispatch({ type: 'COMPLETE_MESSAGE_BY_ROUND', payload: { round, role } });
+          
+          // Clear all processing indicators AND breathing animation when AI finishes
+          setTypingAI(null);
+          stopProcessing();
+          clearProgression();
+          
+          // Mark AI as no longer active and clear breathing animation
+          isAIActiveRef.current = false;
+          setActiveBreathingRound(0);
+          
+          // Reset message tracking
+          currentMessageId = '';
+          currentMessageContent = '';
+          isFinalSynthesisRef.current = false;
+          
+          // Small delay before next round
+          setTimeout(() => {
+            // Only proceed to next round if conversation is still active
+            if (round < 6 && state.conversation?.status === 'active') {
+              dispatch({ type: 'NEXT_ROUND' });
+            }
+          }, 1000);
+        },
+        onConversationComplete: () => {
+          dispatch({ type: 'COMPLETE_CONVERSATION' });
+          setTypingAI(null);
+          setCurrentRound(0);
+          setActiveBreathingRound(0);
+          processingRef.current = false;
+          
+          // Ensure loading state is cleared (safety dispatch)
+          dispatch({ type: 'SET_LOADING', payload: false });
+          
+          // Update usage status
+          if (usageStatus) {
+            setUsageStatus({
+              ...usageStatus,
+              used: usageStatus.used + 1,
+            });
+          }
+        },
+        onError: (error: string) => {
+          dispatch({ type: 'SET_ERROR', payload: error });
+          setTypingAI(null);
+          processingRef.current = false;
+          clearProgression();
+        },
+        onTokenUpdate: (conversationId: string, tokens: { inputTokens: number; outputTokens: number; model: 'gpt-4' | 'claude-3-sonnet' | 'claude-3-haiku' }) => {
+          // Token tracking logic would go here
+        }
+      });
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to start conversation' });
+      processingRef.current = false;
+    }
+  };
+
+  const handleStartConversation = async (initialPrompt: string) => {
+    if (processingRef.current || !sessionId) return;
+
+    // Check if we have user email - if not, show email capture modal
+    if (!userEmail) {
+      setShowEmailCapture(true);
+      setPendingPrompt(initialPrompt);
+      return;
+    }
+
+    // Use the existing email for conversation
+    return handleStartConversationWithEmail(initialPrompt, userEmail);
+  };
           lastRoundKeyRef.current = roundKey;
           
           // Increment step counter for each AI response
