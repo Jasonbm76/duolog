@@ -20,7 +20,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="pt-64 pb-20 px-6">
+    <section className="pt-64 pb-20 px-0 md:px-6">
       <div className="container mx-auto max-w-4xl text-center">
         <motion.div variants={staggerChildren} initial="initial" animate="animate" className="space-y-8">
           <motion.div variants={fadeInUp} className="space-y-2">

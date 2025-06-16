@@ -5,6 +5,7 @@ import { Settings, Key, AlertCircle, CheckCircle, X, Shield } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { SecureStorage } from '@/lib/utils/encryption';
 import { toast } from 'sonner';
+import { validateApiKey } from '@/lib/utils/input-validation';
 
 interface APIKeys {
   openai: string;
@@ -170,7 +171,17 @@ export default function SettingsDialog({ isOpen, onClose, onKeysUpdated }: Setti
             <input
               type="password"
               value={keys.openai}
-              onChange={(e) => setKeys(prev => ({ ...prev, openai: e.target.value }))}
+              onChange={(e) => {
+                const keyValidation = validateApiKey(e.target.value, 'openai');
+                setKeys(prev => ({ ...prev, openai: keyValidation.sanitized }));
+                
+                // Client-side validation feedback
+                if (!keyValidation.isValid && e.target.value.trim().length > 0) {
+                  setValidation(prev => ({ ...prev, openai: false }));
+                } else {
+                  setValidation(prev => ({ ...prev, openai: null }));
+                }
+              }}
               placeholder="sk-..."
               className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-lg text-on-dark placeholder-on-dark-muted focus:border-primary focus:outline-none"
             />
@@ -192,7 +203,17 @@ export default function SettingsDialog({ isOpen, onClose, onKeysUpdated }: Setti
             <input
               type="password"
               value={keys.anthropic}
-              onChange={(e) => setKeys(prev => ({ ...prev, anthropic: e.target.value }))}
+              onChange={(e) => {
+                const keyValidation = validateApiKey(e.target.value, 'anthropic');
+                setKeys(prev => ({ ...prev, anthropic: keyValidation.sanitized }));
+                
+                // Client-side validation feedback
+                if (!keyValidation.isValid && e.target.value.trim().length > 0) {
+                  setValidation(prev => ({ ...prev, anthropic: false }));
+                } else {
+                  setValidation(prev => ({ ...prev, anthropic: null }));
+                }
+              }}
               placeholder="sk-ant-..."
               className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-lg text-on-dark placeholder-on-dark-muted focus:border-primary focus:outline-none"
             />

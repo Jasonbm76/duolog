@@ -40,8 +40,8 @@ export default function CallToAction() {
           <h3 className="text-xl font-semibold text-on-dark">
             Try the Free Demo
           </h3>
-          <p className="text-on-dark-muted text-sm">
-            Experience AI collaboration with 3 free conversations
+          <p className="text-on-dark-muted text-sm pb-3">
+            Experience AI collaboration with 3 free conversations.
           </p>
           <Link href="/chat">
             <Button className="w-full h-12 bg-gradient-to-r from-primary-600 to-care-600 hover:from-primary-700 hover:to-care-700 text-on-dark font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25">
@@ -51,7 +51,7 @@ export default function CallToAction() {
             </Button>
           </Link>
           <p className="text-xs text-on-dark opacity-75">
-            No signup required • 3 conversations included
+            Quick email verification • 3 conversations included • Email signup required and demo users are automatically added to the waitlist.
           </p>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function CallToAction() {
             Want unlimited access?
           </h3>
           <p className="text-on-dark-muted text-sm">
-            Join the waitlist for the full-featured product with unlimited conversations
+            Join the waitlist for our full product launch with <br />paid tiers & unlimited conversations. <br />Demo users are automatically added.
           </p>
           <Button
             onClick={() => setShowEmailForm(true)}

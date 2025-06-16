@@ -13,7 +13,7 @@ export default function AICollaborationPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-64 pb-20 px-6">
+      <section className="pt-64 pb-20 px-0 md:px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-6 mb-16">
             <h1 className="text-5xl md:text-6xl font-bold text-on-dark">
@@ -28,7 +28,7 @@ export default function AICollaborationPage() {
       </section>
 
       {/* Philosophy Section */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-0 md:px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -80,7 +80,7 @@ export default function AICollaborationPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 px-6 border-t border-white/10">
+      <section className="py-20 px-0 md:px-6 border-t border-white/10">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-on-dark mb-4">
@@ -177,7 +177,7 @@ export default function AICollaborationPage() {
       </section>
 
       {/* Use Cases Section */}
-      <section className="py-20 px-6 border-t border-white/10">
+      <section className="py-20 px-0 md:px-6 border-t border-white/10">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-on-dark mb-4">
@@ -245,7 +245,7 @@ export default function AICollaborationPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 border-t border-white/10">
+      <section className="py-20 px-0 md:px-6 border-t border-white/10">
         <div className="container mx-auto max-w-4xl text-center space-y-8">
           <h2 className="text-4xl font-bold text-on-dark">
             Experience the Future of Prompt Engineering

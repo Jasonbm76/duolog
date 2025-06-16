@@ -13,6 +13,7 @@ interface StartConversationOptions {
   userKeys?: APIKeys;
   sessionId: string;
   email?: string;
+  fingerprint?: string;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -26,6 +27,7 @@ interface ContinueConversationOptions {
   userKeys?: APIKeys;
   sessionId: string;
   email?: string;
+  fingerprint?: string;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -50,6 +52,7 @@ class RealConversationService {
       userKeys,
       sessionId,
       email,
+      fingerprint,
       onRoundStart,
       onContentChunk,
       onRoundComplete,
@@ -76,6 +79,7 @@ class RealConversationService {
           userKeys,
           sessionId,
           email,
+          fingerprint,
         }),
         signal: this.abortController.signal,
       });
@@ -155,6 +159,12 @@ class RealConversationService {
         }
       }
     } catch (error) {
+      // Handle abort gracefully - this is expected when user clicks stop
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Conversation stopped by user');
+        return; // Don't call onError for user-initiated stops
+      }
+      
       console.error('Conversation error:', error);
       onError?.(error instanceof Error ? error.message : 'An error occurred');
     }

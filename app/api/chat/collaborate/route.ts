@@ -3,7 +3,8 @@ import { anthropic } from '@/lib/services/anthropic';
 import { openai } from '@/lib/services/openai';
 import { createStreamResponse } from '@/lib/services/streaming';
 import { rateLimiter } from '@/lib/services/rate-limiter';
-import { robustUsageTracker } from '@/lib/services/robust-usage-tracker';
+import { emailUsageTracker } from '@/lib/services/email-usage-tracker';
+import { validateEmail, validateText, validateSessionId } from '@/lib/utils/input-validation';
 
 export const runtime = 'edge';
 
@@ -14,33 +15,74 @@ interface CollaborateRequest {
     anthropic?: string;
   };
   sessionId: string;
-  email?: string;
+  email: string; // Now required
+  fingerprint?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: CollaborateRequest = await request.json();
-    const { prompt, userKeys, sessionId, email } = body;
+    const { prompt, userKeys, sessionId, email, fingerprint } = body;
 
-    // Validate request
-    if (!prompt || prompt.trim().length === 0) {
-      return new Response(JSON.stringify({ error: 'Prompt is required' }), {
+    // Validate and sanitize prompt
+    const promptValidation = validateText(prompt, {
+      maxLength: 5000,
+      minLength: 1,
+      allowHtml: false,
+      allowSpecialChars: true
+    });
+
+    if (!promptValidation.isValid) {
+      return new Response(JSON.stringify({ 
+        error: promptValidation.errors[0] || 'Invalid prompt' 
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Validate and sanitize email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      return new Response(JSON.stringify({ 
+        error: emailValidation.errors[0] || 'Invalid email address' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate session ID
+    if (!validateSessionId(sessionId)) {
+      return new Response(JSON.stringify({ error: 'Invalid session ID' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate fingerprint if provided
+    let sanitizedFingerprint = '';
+    if (fingerprint) {
+      const fingerprintValidation = validateText(fingerprint, {
+        maxLength: 100,
+        allowHtml: false,
+        allowSpecialChars: false
+      });
+      if (fingerprintValidation.isValid) {
+        sanitizedFingerprint = fingerprintValidation.sanitized;
+      }
     }
 
     // Extract IP address for usage tracking
     const { extractIPAddress } = await import('@/lib/utils/ip-utils');
     const ip = extractIPAddress(request);
     
-    // Create user identifiers  
+    // Create user identifiers for email-based tracking
     const identifiers = {
-      composite: '', // Will be set by tracker
+      email: emailValidation.sanitized,
+      fingerprint: sanitizedFingerprint,
       ip,
-      fingerprint: undefined,
-      persistentId: undefined, 
-      sessionId: sessionId || undefined,
+      sessionId,
     };
 
     // Check rate limits if using our keys
@@ -60,17 +102,27 @@ export async function POST(request: NextRequest) {
       // Record the attempt
       rateLimiter.recordAttempt(request);
 
-      // Check usage limits with robust tracking
-      const usageCheck = await robustUsageTracker.checkLimit(request, identifiers, email);
+      // Check usage limits with email-based tracking
+      const usageCheck = await emailUsageTracker.checkLimit(request, identifiers, userKeys);
       if (!usageCheck.allowed) {
         return new Response(JSON.stringify({ 
           error: 'Free usage limit reached', 
           upgradeRequired: true,
           limit: usageCheck.limit,
-          used: usageCheck.used
+          used: usageCheck.used,
+          email: emailValidation.sanitized
         }), {
           status: 402,
           headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Log if suspicious activity detected
+      if (usageCheck.suspiciousActivity) {
+        console.warn('🚨 Suspicious activity detected:', { 
+          email: emailValidation.sanitized, 
+          fingerprint: sanitizedFingerprint, 
+          ip 
         });
       }
     }
@@ -111,7 +163,7 @@ export async function POST(request: NextRequest) {
           type: 'round_start',
           round: currentRound,
           model: 'gpt-4',
-          inputPrompt: prompt,
+          inputPrompt: promptValidation.sanitized,
         });
 
         let gptResult1;
@@ -122,7 +174,7 @@ export async function POST(request: NextRequest) {
           }
           
           gptResult1 = await openai.streamCompletion({
-            prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. A user has asked: "${prompt}"
+            prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. A user has asked: "${promptValidation.sanitized}"
 
 Provide a thorough, helpful response. After you respond, Claude will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.`,
             apiKey: userKeys?.openai,
@@ -178,12 +230,12 @@ Provide a thorough, helpful response. After you respond, Claude will review your
             type: 'round_start',
             round: currentRound,
             model: 'claude',
-            inputPrompt: prompt,
+            inputPrompt: promptValidation.sanitized,
           });
           
           // Fallback to Claude for initial response
           const claudeResult1 = await anthropic.streamCompletion({
-            prompt: `You are Claude providing the initial response to a user question. A user has asked: "${prompt}"
+            prompt: `You are Claude providing the initial response to a user question. A user has asked: "${promptValidation.sanitized}"
 
 Provide a thorough, helpful response. Focus on being comprehensive and addressing all aspects of their question.`,
             apiKey: userKeys?.anthropic,
@@ -241,7 +293,7 @@ Provide a thorough, helpful response. Focus on being comprehensive and addressin
               ).join('\n\n');
 
               result = await openai.streamCompletion({
-                prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer to this user question: "${prompt}"
+                prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer to this user question: "${promptValidation.sanitized}"
 
 Conversation so far:
 ${conversationContext}
@@ -285,7 +337,7 @@ Be honest about whether the current answer is sufficient or needs enhancement.`,
             ).join('\n\n');
 
             result = await anthropic.streamCompletion({
-              prompt: `You are Claude, collaborating with GPT-4 to provide the best possible answer to this user question: "${prompt}"
+              prompt: `You are Claude, collaborating with GPT-4 to provide the best possible answer to this user question: "${promptValidation.sanitized}"
 
 Conversation so far:
 ${conversationContext}
@@ -352,7 +404,7 @@ Be honest about whether the current combined answer is sufficient or needs more 
           ).join('\n\n');
 
           const finalSynthesis = await anthropic.streamCompletion({
-            prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${prompt}"
+            prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
 
 Here's the complete discussion:
 ${conversationContext}
@@ -398,7 +450,7 @@ Do not mention the collaboration process or that this is a synthesis. Just provi
 
         // Track usage if using our keys
         if (!userKeys?.openai || !userKeys?.anthropic) {
-          await robustUsageTracker.increment(request, identifiers, email);
+          await emailUsageTracker.increment(request, identifiers, userKeys);
         }
 
         await writer.write({

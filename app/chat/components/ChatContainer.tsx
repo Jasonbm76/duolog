@@ -20,6 +20,8 @@ import EmailForm from '@/components/EmailForm';
 import UnifiedStatusBar from './UnifiedStatusBar';
 import ChatNavigation from './ChatNavigation';
 import FinalSynthesis from './FinalSynthesis';
+import EmailCaptureModal from './EmailCaptureModal';
+import EmailVerificationWaiting from './EmailVerificationWaiting';
 import { tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +41,6 @@ export default function ChatContainer() {
   const stepCounterRef = useRef(0);
   const isAIActiveRef = useRef(false); // Track if any AI is currently active
   const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null);
-  const [isUsageLoaded, setIsUsageLoaded] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -55,6 +56,19 @@ export default function ChatContainer() {
   const lastScrollTop = useRef(0);
   const isFinalSynthesisRef = useRef(false);
   const lastRoundKeyRef = useRef<string | null>(null);
+
+  // Email-based usage tracking
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [showVerificationWaiting, setShowVerificationWaiting] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState<string>('');
+  const [isExistingUser, setIsExistingUser] = useState(false);
+
+  // Email validation helper
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   // Stable message ID generation to avoid hydration issues
   const generateMessageId = (model: string, round: number) => {
@@ -115,6 +129,7 @@ export default function ChatContainer() {
       const service = isMockMode ? mockConversationService : realConversationService;
       setSessionId(service.generateSessionId());
     }
+    
   }, []); // Remove isMockMode dependency to prevent unnecessary regeneration
 
   // Load saved keys on component mount
@@ -137,9 +152,32 @@ export default function ChatContainer() {
     loadSavedKeys();
   }, [sessionId]);
 
-  // Load usage status whenever sessionId or userKeys change
+  // Check for existing users on component mount (but don't load email)
   useEffect(() => {
-    if (!sessionId) return;
+    const checkExistingUser = () => {
+      if (typeof window !== 'undefined') {
+        // Only check if user has existing fingerprint-based usage (migration case)
+        const existingFingerprint = localStorage.getItem('user_fingerprint');
+        if (existingFingerprint) {
+          setIsExistingUser(true);
+        }
+      }
+    };
+
+    checkExistingUser();
+  }, []);
+
+  // Load usage status whenever sessionId, userEmail, or userKeys change
+  useEffect(() => {
+    // Skip if no email (user hasn't provided one yet)
+    if (!userEmail) {
+      return;
+    }
+    
+    // If sessionId isn't ready yet, wait for it
+    if (!sessionId) {
+      return;
+    }
 
     const loadUsageStatus = async () => {
       try {
@@ -148,9 +186,9 @@ export default function ChatContainer() {
         const identifiers = createUserIdentifier();
         
         const params = new URLSearchParams({
+          email: userEmail,
           sessionId,
           fingerprint: identifiers.fingerprint,
-          persistentId: identifiers.persistentId,
         });
 
         // Include user keys in the request if available
@@ -158,31 +196,85 @@ export default function ChatContainer() {
           params.append('userKeys', JSON.stringify(userKeys));
         }
         
-        const response = await fetch(`/api/chat/usage?${params}`);
+        const response = await fetch(`/api/chat/email-usage?${params}`);
         if (response.ok) {
           const data = await response.json();
           setUsageStatus(data);
         }
       } catch (error) {
-        console.error('Failed to load usage status:', error);
+        console.error('Failed to load email usage status:', error);
         // Even on error, mark as loaded to show something
         setUsageStatus({ used: 0, limit: 5, hasOwnKeys: false });
-      } finally {
-        setIsUsageLoaded(true);
       }
     };
 
     loadUsageStatus();
-  }, [sessionId, userKeys]);
+  }, [sessionId, userEmail, userKeys]);
 
   // Handler for usage status changes (used by reset button)
   const handleUsageStatusChange = (newStatus: UsageStatus | null) => {
     setUsageStatus(newStatus);
-    setIsUsageLoaded(true); // Ensure we mark as loaded when status changes
+  };
+
+  // Handle email submission from modal (when verified)
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      setUserEmail(email);
+      setShowEmailCapture(false);
+      setShowVerificationWaiting(false);
+      
+      // If there's a pending prompt, start the conversation
+      if (pendingPrompt) {
+        // Wait a bit for state to update
+        setTimeout(() => {
+          handleStartConversation(pendingPrompt);
+        }, 100);
+        setPendingPrompt('');
+      }
+      
+      toast.success('Email verified! Starting your conversation...');
+    } catch (error) {
+      console.error('Email submission error:', error);
+      toast.error('Something went wrong. Please try again.');
+    }
+  };
+
+  // Handle when verification is required
+  const handleVerificationRequired = (email: string) => {
+    setUserEmail(email);
+    setShowEmailCapture(false);
+    setShowVerificationWaiting(true);
+  };
+
+  // Handle verification completion
+  const handleVerificationComplete = () => {
+    setShowVerificationWaiting(false);
+    
+    // If there's a pending prompt, start the conversation
+    if (pendingPrompt) {
+      setTimeout(() => {
+        handleStartConversation(pendingPrompt);
+      }, 100);
+      setPendingPrompt('');
+    }
+  };
+
+  // Handle resend verification email
+  const handleResendVerification = () => {
+    // Just show a toast - the EmailVerificationWaiting component handles the API call
+    console.log('Resending verification email...');
   };
 
   const handleStartConversation = async (initialPrompt: string) => {
     if (processingRef.current || !sessionId) return;
+
+    // Check if we have user email - if not, show email capture modal
+    if (!userEmail) {
+      setShowEmailCapture(true);
+      setPendingPrompt(initialPrompt);
+      return;
+    }
+
     processingRef.current = true;
 
     try {
@@ -190,16 +282,15 @@ export default function ChatContainer() {
       const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
       const identifiers = createUserIdentifier();
       
-      const validationResponse = await fetch('/api/chat/start', {
+      const validationResponse = await fetch('/api/chat/email-usage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: initialPrompt,
-          sessionId,
+          email: userEmail,
           fingerprint: identifiers.fingerprint,
-          persistentId: identifiers.persistentId,
+          sessionId,
           userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         }),
       });
@@ -246,6 +337,8 @@ export default function ChatContainer() {
       await service.startConversation({
         prompt: initialPrompt,
         sessionId,
+        email: userEmail,
+        fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
@@ -715,25 +808,8 @@ export default function ChatContainer() {
               >
                 <div className="lg:space-y-6 space-y-4">
                   
-                  {/* Loading state - hide everything until usage status is loaded */}
-                  {!isUsageLoaded && (
-                    <div className="text-center py-16">
-                      <div className="glass-card p-8 max-w-md mx-auto">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/20 rounded-full mb-4">
-                          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-on-dark mb-2">
-                          Loading...
-                        </h3>
-                        <p className="text-on-dark-muted">
-                          Checking your usage status
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Thank you message when out of usage */}
-                  {isUsageLoaded && !state.conversation && !state.error && (usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
+                  {!state.conversation && !state.error && (usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
                     <div className="text-center py-8">
                       <div className="glass-card p-8 max-w-md mx-auto">
                         {/* Usage Limit Reached */}
@@ -777,7 +853,7 @@ export default function ChatContainer() {
                   )}
 
                   {/* Welcome State - hide if user is out of usage */}
-                  {isUsageLoaded && !state.conversation && !state.error && !(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
+                  {!state.conversation && !state.error && !(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
                     <div className="text-center py-16">
                       <div className="glass-card p-8 max-w-2xl mx-auto">
                         {/* Animated Brains */}
@@ -1098,8 +1174,8 @@ export default function ChatContainer() {
           </div>
         </div>
 
-        {/* Fixed Input Area - hide if user is out of usage or still loading */}
-        {isUsageLoaded && !(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
+        {/* Fixed Input Area - hide if user is out of usage */}
+        {!(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
           <div ref={promptInputRef} className="mb-6 px-0">
           <div className="container-fluid mx-auto lg:max-w-4xl max-w-full">
             <PromptInput
@@ -1158,6 +1234,29 @@ export default function ChatContainer() {
           }
         }}
       />
+
+      {/* Email Capture Modal */}
+      <EmailCaptureModal
+        isOpen={showEmailCapture}
+        onSubmit={handleEmailSubmit}
+        onClose={() => {
+          setShowEmailCapture(false);
+          setPendingPrompt('');
+        }}
+        isExistingUser={isExistingUser}
+        onVerificationRequired={handleVerificationRequired}
+      />
+
+      {/* Email Verification Waiting */}
+      {showVerificationWaiting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <EmailVerificationWaiting
+            email={userEmail}
+            onResendEmail={handleResendVerification}
+            onVerificationComplete={handleVerificationComplete}
+          />
+        </div>
+      )}
     </>
   );
 }

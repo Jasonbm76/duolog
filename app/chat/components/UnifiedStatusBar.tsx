@@ -79,33 +79,29 @@ export default function UnifiedStatusBar({
   }, [conversationId, isMockMode]);
 
   const handleResetUsage = async () => {
-    console.log('🔴 [UnifiedStatusBar] RESET BUTTON CLICKED - handleResetUsage called!');
-    console.log('🔴 [UnifiedStatusBar] NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔴 [UnifiedStatusBar] Event handler is working!');
-    
     try {
-      console.log('🔄 [UnifiedStatusBar] Starting reset usage...');
-      const response = await fetch('/api/dev/reset-usage', {
+      // Reset is development-only feature - clear all tracking
+      const response = await fetch('/api/dev/reset-email-usage', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset_counts' }),
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          action: 'reset_all' // Reset all tracking for development
+        }),
       });
       
       const result = await response.json();
-      console.log('[UnifiedStatusBar] Reset API response:', result);
       
       if (response.ok) {
         if (result.success) {
           toast.success(result.message || 'Usage counter reset!');
           
           // Add a small delay to ensure database transaction is committed
-          console.log('⏳ [UnifiedStatusBar] Waiting for database commit...');
           await new Promise(resolve => setTimeout(resolve, 500));
           
           // Refresh usage status without full page reload
-          console.log('🔄 [UnifiedStatusBar] Refreshing usage status...');
           await refreshUsageStatus();
-          console.log('✅ [UnifiedStatusBar] Reset workflow completed');
         } else {
           toast.info(result.message || 'Database not configured');
         }
@@ -119,55 +115,10 @@ export default function UnifiedStatusBar({
   };
 
   const refreshUsageStatus = async () => {
-    try {
-      console.log('🔄 [UnifiedStatusBar] Refreshing usage status with identifiers...');
-      
-      // Import fingerprinting utilities (dynamic import for client-side only)
-      const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
-      const identifiers = createUserIdentifier();
-      
-      console.log('[UnifiedStatusBar] Generated identifiers:', {
-        fingerprint: identifiers.fingerprint,
-        persistentId: identifiers.persistentId,
-        sessionId
-      });
-      
-      const params = new URLSearchParams({
-        sessionId,
-        fingerprint: identifiers.fingerprint,
-        persistentId: identifiers.persistentId,
-      });
-
-      // Check for user keys in localStorage and include them
-      try {
-        const { SecureStorage } = await import('@/lib/utils/encryption');
-        const stored = await SecureStorage.getItem('duolog-api-keys');
-        if (stored) {
-          const userKeys = JSON.parse(stored);
-          if (userKeys.openai || userKeys.anthropic) {
-            params.append('userKeys', JSON.stringify(userKeys));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load user keys for refresh:', error);
-      }
-      
-      const apiUrl = `/api/chat/usage?${params}`;
-      console.log('[UnifiedStatusBar] Making request to:', apiUrl);
-      
-      const response = await fetch(apiUrl);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[UnifiedStatusBar] Usage API response:', data);
-        console.log('[UnifiedStatusBar] Calling onUsageStatusChange with:', data);
-        onUsageStatusChange?.(data);
-        console.log('✅ [UnifiedStatusBar] Usage status refresh completed');
-      } else {
-        console.error('[UnifiedStatusBar] Usage API request failed:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Failed to refresh usage status:', error);
-    }
+    // Usage status is managed by parent component
+    // This function is called after reset to trigger parent refresh
+    // Force parent to reload usage status by setting to null first
+    onUsageStatusChange(null);
   };
 
   // Always show the status bar - it provides access to settings even when no data is loaded yet

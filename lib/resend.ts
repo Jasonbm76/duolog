@@ -101,7 +101,7 @@ export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmai
                 height: 24px;
                 margin-right: 15px;
                 flex-shrink: 0;
-                background: linear-gradient(135deg, #2563EB 0%, #8B5CF6 100%);
+                background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -115,7 +115,7 @@ export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmai
               }
               .button { 
                 display: inline-block; 
-                background: linear-gradient(135deg, #2563EB 0%, #8B5CF6 100%);
+                background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
                 color: #FFFFFF !important;
                 padding: 14px 40px;
                 text-decoration: none;
@@ -132,20 +132,20 @@ export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmai
               .footer { 
                 padding: 30px;
                 text-align: center;
-                color: #71717A;
+                color: #FFFFFF;
                 font-size: 14px;
                 border-top: 1px solid rgba(250, 250, 250, 0.1);
               }
               .footer p {
                 margin: 5px 0;
-                color: #71717A;
+                color: #FFFFFF;
               }
               .footer a {
-                color: #93C5FD;
+                color: #2563EB;
                 text-decoration: none;
               }
               .highlight {
-                background: linear-gradient(135deg, #2563EB 0%, #8B5CF6 100%);
+                background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
@@ -157,7 +157,7 @@ export async function sendWelcomeEmail({ email, confirmationToken }: WelcomeEmai
             <div class="wrapper">
               <div class="container">
                 <div class="header">
-                  <img src="${process.env.NEXT_PUBLIC_APP_URL}/logo-email.png" alt="DuoLog.ai" class="logo" />
+                  <img src="https://duolog.ai/logo-email.png" alt="DuoLog.ai" class="logo" />
                 </div>
                 <div class="content">
                   <h2>You're on the early access list! 🎉</h2>

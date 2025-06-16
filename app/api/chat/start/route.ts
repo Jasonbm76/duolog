@@ -59,7 +59,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Increment usage counter for users without their own keys
-      await robustUsageTracker.increment(request, identifiers, email);
+      await robustUsageTracker.increment(request, identifiers, email, {
+        conversationId: sessionId,
+        promptLength: prompt.length
+      });
 
       // Return success response with usage tracking
       return new Response(JSON.stringify({

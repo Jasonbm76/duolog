@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Palette, Component, Book, Search, Code2 } from "lucide-react";
+import { FileText, Palette, Component, Book, Search, Code2, Users, Mail } from "lucide-react";
 
 export default function AdminPage() {
   const features = [
@@ -30,6 +30,20 @@ export default function AdminPage() {
       description: "Interactive component playground to test and experiment with components",
       href: "/admin/playground",
       icon: Book,
+      status: "Active",
+    },
+    {
+      title: "User Analytics",
+      description: "Track user signups, email verifications, and conversation usage stats",
+      href: "/admin/analytics",
+      icon: Users,
+      status: "Active",
+    },
+    {
+      title: "Email Preview",
+      description: "Preview and test email templates with different configurations",
+      href: "/admin/email-preview",
+      icon: Mail,
       status: "Active",
     },
   ];

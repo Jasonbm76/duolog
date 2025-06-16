@@ -52,7 +52,7 @@ export default function Features() {
   }
 
   return (
-    <section id="features" className="py-20 px-6">
+    <section id="features" className="py-20 px-0 md:px-6">
       <div className="container mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -108,7 +108,7 @@ export default function Features() {
             </Button>
           </Link>
           <p className="text-xs text-on-dark opacity-75 mt-2">
-            3 free conversations • No signup required
+            3 free conversations • Email signup required and demo users are automatically added to the waitlist.
           </p>
         </motion.div>
       </div>
