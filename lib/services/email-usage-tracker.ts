@@ -436,7 +436,8 @@ class EmailUsageTracker {
 
       // Send verification email
       const { emailService } = await import('./email-service');
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                     process.env.NEXT_PUBLIC_BASE_URL || 
                      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
                      'http://localhost:5001';
       const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
