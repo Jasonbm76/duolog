@@ -29,12 +29,13 @@ CREATE OR REPLACE FUNCTION get_daily_conversation_counts(
 BEGIN
   RETURN QUERY
   SELECT 
-    DATE(ch.started_at) as date,
+    DATE(ch.started_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York') as date,
     COUNT(*) as conversation_count
   FROM conversation_history ch
-  WHERE ch.started_at >= CURRENT_DATE - INTERVAL '1 day' * days_back
-  GROUP BY DATE(ch.started_at)
-  ORDER BY DATE(ch.started_at);
+  WHERE ch.started_at >= (CURRENT_DATE - INTERVAL '1 day' * days_back)
+    AND ch.started_at <= (CURRENT_DATE + INTERVAL '1 day')
+  GROUP BY DATE(ch.started_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York')
+  ORDER BY DATE(ch.started_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York');
 END;
 $$ LANGUAGE plpgsql;
 

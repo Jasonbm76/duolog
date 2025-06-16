@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { extractIPAddress } from '@/lib/utils/ip-utils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -249,7 +250,7 @@ class EmailUsageTracker {
       }
 
       // Log conversation for analytics
-      const ip = this.extractIPAddress(request);
+      const ip = extractIPAddress(request);
       const userAgent = request.headers.get('user-agent') || 'Unknown';
       
       await supabase.rpc('log_conversation_start', {

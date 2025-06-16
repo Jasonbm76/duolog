@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, Mail, MessageSquare, AlertTriangle, RefreshCw, TrendingUp, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import DailyConversationsChart from '@/app/admin/components/DailyConversationsChart';
 
 interface AnalyticsData {
@@ -17,7 +18,11 @@ interface AnalyticsData {
   usersAtLimit: number;
   recentSignups: Array<{
     email: string;
+    displayEmail?: string;
+    realEmail?: string;
     conversations_used: number;
+    current_usage?: number;
+    total_conversations?: number;
     max_conversations: number;
     email_verified: boolean;
     created_at: string;
@@ -35,11 +40,18 @@ export default function AnalyticsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/admin/analytics');
+      console.log('Fetching analytics data...');
+      const response = await fetch('/api/admin/analytics', {
+        cache: 'no-store', // Prevent caching
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch analytics');
       }
       const result = await response.json();
+      console.log('Analytics data received:', result);
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -49,6 +61,7 @@ export default function AnalyticsPage() {
   };
 
   const resetUserUsage = async (email: string) => {
+    console.log('Resetting usage for email:', email);
     setResettingUser(email);
     try {
       const response = await fetch('/api/admin/reset-user-usage', {
@@ -57,13 +70,27 @@ export default function AnalyticsPage() {
         body: JSON.stringify({ email })
       });
       
+      const data = await response.json();
+      console.log('Reset response:', { status: response.status, data });
+      
       if (!response.ok) {
-        throw new Error('Failed to reset user usage');
+        throw new Error(data.error || 'Failed to reset user usage');
       }
+      
+      // Show success message
+      console.log('Reset successful, refreshing analytics...');
+      toast.success(`Successfully reset usage limit for ${email} (analytics preserved)`, {
+        style: {
+          background: 'white',
+          color: 'black',
+          border: '1px solid #e5e7eb',
+        }
+      });
       
       // Refresh analytics data
       await fetchAnalytics();
     } catch (err) {
+      console.error('Reset error:', err);
       setError(err instanceof Error ? err.message : 'Failed to reset user usage');
     } finally {
       setResettingUser(null);
@@ -253,32 +280,36 @@ export default function AnalyticsPage() {
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="font-medium text-gray-900">{user.email}</p>
+                      <p className="font-medium text-gray-900">{user.displayEmail || user.email}</p>
                       <p className="text-sm text-gray-500">
                         Signed up {formatDate(user.created_at)}
                         {user.last_conversation_at && (
                           <span> • Last active {formatDate(user.last_conversation_at)}</span>
+                        )}
+                        {user.total_conversations !== undefined && (
+                          <span> • {user.total_conversations} total conversations</span>
                         )}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {getVerificationBadge(user.email_verified)}
-                    {getUsageBadge(user.conversations_used, user.max_conversations)}
+                    {getUsageBadge(user.current_usage ?? user.conversations_used, user.max_conversations)}
                     <Badge variant="outline" className="text-gray-600">
-                      {user.conversations_used}/{user.max_conversations}
+                      {user.current_usage ?? user.conversations_used}/{user.max_conversations}
                     </Badge>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => resetUserUsage(user.email)}
-                      disabled={resettingUser === user.email}
-                      className="text-xs px-2 py-1 h-auto"
+                      onClick={() => resetUserUsage(user.realEmail || user.email)}
+                      disabled={resettingUser === (user.realEmail || user.email)}
+                      className="text-xs px-2 py-1 h-auto hover:bg-primary hover:text-white hover:border-primary transition-colors"
+                      title="Reset usage limit (allows more conversations, preserves analytics)"
                     >
-                      {resettingUser === user.email ? (
-                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      {resettingUser === (user.realEmail || user.email) ? (
+                        <RefreshCw className="w-3 h-3 animate-spin text-primary" />
                       ) : (
-                        <RotateCcw className="w-3 h-3" />
+                        <RotateCcw className="w-3 h-3 text-primary" />
                       )}
                     </Button>
                   </div>

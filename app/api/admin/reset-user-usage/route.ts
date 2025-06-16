@@ -55,14 +55,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check current usage before reset
+    const { data: beforeData } = await supabase
+      .from('user_usage')
+      .select('conversations_used')
+      .eq('email', email)
+      .single();
+
+    console.log(`Before reset for ${email}:`, beforeData);
+
     // Reset user's conversation count
-    const { error: resetError } = await supabase
+    const { data: resetData, error: resetError } = await supabase
       .from('user_usage')
       .update({
         conversations_used: 0,
         updated_at: new Date().toISOString()
       })
-      .eq('email', email);
+      .eq('email', email)
+      .select();
 
     if (resetError) {
       console.error('Error resetting user usage:', resetError);
@@ -71,6 +81,17 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    console.log(`After reset for ${email}:`, resetData);
+
+    // Check current usage after reset to confirm
+    const { data: afterData } = await supabase
+      .from('user_usage')
+      .select('conversations_used')
+      .eq('email', email)
+      .single();
+
+    console.log(`Verification after reset for ${email}:`, afterData);
 
     return NextResponse.json({
       success: true,

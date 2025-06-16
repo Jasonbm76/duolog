@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, MessageSquare, Calendar, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, MessageSquare, Calendar, BarChart3, RefreshCw } from 'lucide-react';
 
 interface DailyConversationData {
   date: string;
@@ -31,6 +32,10 @@ export default function DailyConversationsChart({ className }: DailyConversation
       const result = await response.json();
 
       if (result.success) {
+        console.log('Chart data received:', result.data);
+        const last5 = result.data.slice(-5);
+        console.log('Last 5 dates in data:', last5.map(d => ({ date: d.date, count: d.conversation_count })));
+        console.log('Today should be 2025-06-16, last date is:', result.data[result.data.length - 1]?.date);
         setData(result.data);
       } else {
         setError(result.error || 'Failed to fetch data');
@@ -145,9 +150,21 @@ export default function DailyConversationsChart({ className }: DailyConversation
                Daily conversation volume over the last 30 days
              </p>
           </div>
-          <div className="flex items-center gap-1 px-2 py-1 bg-primary/5 rounded-lg">
-            <Calendar className="w-4 h-4 text-primary" />
-            <span className="text-xs font-medium text-primary">30 days</span>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={fetchData}
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 hover:bg-primary hover:text-white hover:border-primary transition-colors"
+              disabled={loading}
+              title="Refresh chart data"
+            >
+              <RefreshCw className={`w-3 h-3 text-primary ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <div className="flex items-center gap-1 px-2 py-1 bg-primary/5 rounded-lg">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span className="text-xs font-medium text-primary">30 days</span>
+            </div>
           </div>
         </div>
         

@@ -64,7 +64,9 @@ export async function GET(request: NextRequest) {
 
     // Fill in missing dates with 0 counts
     const result = [];
+    // Use local timezone to ensure we include today properly
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day
     
     for (let i = daysBack - 1; i >= 0; i--) {
       const date = new Date(today);
@@ -77,6 +79,15 @@ export async function GET(request: NextRequest) {
         conversation_count: existingData ? parseInt(existingData.conversation_count) : 0
       });
     }
+    
+    // Debug logging to help troubleshoot
+    console.log('Daily conversations date range:', {
+      today: today.toISOString().split('T')[0],
+      daysBack,
+      firstDate: result[0]?.date,
+      lastDate: result[result.length - 1]?.date,
+      resultCount: result.length
+    });
 
     return NextResponse.json({
       success: true,

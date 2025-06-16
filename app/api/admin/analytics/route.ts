@@ -8,24 +8,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Get basic user stats
-    const [usersResult, conversationsResult, recentUsersResult] = await Promise.all([
+    const [usersResult, conversationsResult, recentUsersResult, conversationHistoryResult] = await Promise.all([
       // Total users and verification stats
       supabase
         .from('user_usage')
         .select('email_verified, conversations_used, max_conversations')
         .order('created_at', { ascending: false }),
       
-      // Total conversations across all users
+      // Total conversations from conversation history (preserves analytics when users reset)
       supabase
-        .from('user_usage')
-        .select('conversations_used'),
+        .from('conversation_history')
+        .select('email'),
       
       // Recent user activity (last 50 users)
       supabase
         .from('user_usage')
         .select('email, conversations_used, max_conversations, email_verified, created_at, last_conversation_at')
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(50),
+      
+      // Get actual conversation counts per user from history (for display)
+      supabase
+        .from('conversation_history')
+        .select('email')
+        .order('started_at', { ascending: false })
     ]);
 
     if (usersResult.error) {
@@ -38,15 +44,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch conversation data' }, { status: 500 });
     }
 
+    if (conversationHistoryResult.error) {
+      console.error('Error fetching conversation history:', conversationHistoryResult.error);
+      return NextResponse.json({ error: 'Failed to fetch conversation history' }, { status: 500 });
+    }
+
     const users = usersResult.data || [];
-    const conversations = conversationsResult.data || [];
+    const conversationHistory = conversationsResult.data || []; // Total conversations from history
     const recentUsers = recentUsersResult.data || [];
+    const allConversations = conversationHistoryResult.data || []; // All conversations for per-user counts
 
     // Calculate stats
     const totalUsers = users.length;
     const totalVerifiedUsers = users.filter(u => u.email_verified).length;
     const totalUnverifiedUsers = totalUsers - totalVerifiedUsers;
-    const totalConversations = conversations.reduce((sum, u) => sum + (u.conversations_used || 0), 0);
+    const totalConversations = conversationHistory.length; // Count actual conversations, not user usage
     const avgConversationsPerUser = totalUsers > 0 ? totalConversations / totalUsers : 0;
     const usersAtLimit = users.filter(u => u.conversations_used >= u.max_conversations).length;
 
@@ -57,12 +69,24 @@ export async function GET(request: NextRequest) {
     
     const suspiciousUsers = abuseData ? Math.min(abuseData.length, 50) : 0; // Cap at reasonable number
 
-    // Anonymize email addresses for privacy (show first 3 chars + domain)
+    // Count actual conversations per user from history
+    const conversationCounts = allConversations.reduce((counts, conv) => {
+      counts[conv.email] = (counts[conv.email] || 0) + 1;
+      return counts;
+    }, {} as Record<string, number>);
+
+    // Anonymize email addresses for privacy but keep real email for admin functions
     const anonymizedRecentUsers = recentUsers.map(user => ({
       ...user,
-      email: user.email.length > 3 
+      displayEmail: user.email.length > 3 
         ? user.email.substring(0, 3) + '***@' + user.email.split('@')[1]
-        : '***@' + user.email.split('@')[1]
+        : '***@' + user.email.split('@')[1],
+      // Keep real email for reset function
+      realEmail: user.email,
+      // Show actual conversation count from history (never reset)
+      total_conversations: conversationCounts[user.email] || 0,
+      // Keep current usage count for limit display
+      current_usage: user.conversations_used
     }));
 
     const analytics = {

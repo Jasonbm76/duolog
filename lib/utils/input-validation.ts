@@ -204,31 +204,31 @@ export class InputValidator {
 
       // Additional character restrictions
       if (!allowSpecialChars) {
-        // Only allow alphanumeric, spaces, and basic punctuation
-        const allowedCharsRegex = /^[a-zA-Z0-9\s.,!?-]*$/;
+        // Only allow alphanumeric, spaces, and basic punctuation for restricted mode
+        const allowedCharsRegex = /^[a-zA-Z0-9\s.,!?'-]*$/;
         if (!allowedCharsRegex.test(sanitized)) {
           errors.push('Text contains invalid characters');
         }
       }
+      // When allowSpecialChars is true (default), we're much more permissive
 
       // Check for potential SQL injection patterns (defense in depth)
-      // Note: Be careful not to block normal user text like contractions and quotes
+      // Note: Only flag obvious SQL injection attempts, not normal user text
       const sqlInjectionPatterns = [
-        /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\s+)/gi,
-        /(;\s*(DROP|DELETE|INSERT|UPDATE|CREATE))/gi,
-        /(\bunion\s+select)/gi,
-        /(--\s*[^\r\n]*)/g, // SQL comments but not double hyphens in normal text
-        /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi
+        /;\s*(DROP|DELETE\s+FROM|TRUNCATE|CREATE|ALTER)\s+/gi,
+        /\bUNION\s+SELECT\s+/gi,
+        /'\s*(OR|AND)\s+['"]/gi, // Classic SQL injection patterns like ' OR '1'='1
+        /--\s*$|\/\*.*\*\//g // SQL comments at end of line or block comments
       ];
 
-      // Only flag as SQL injection if we find actual SQL patterns, not just quotes/apostrophes
+      // Only flag as SQL injection if we find actual dangerous SQL patterns
       const hasSqlInjection = sqlInjectionPatterns.some(pattern => pattern.test(sanitized));
       if (hasSqlInjection) {
-        errors.push('Text contains invalid characters');
-        // Basic cleanup - remove dangerous SQL patterns but preserve normal quotes
-        sanitized = sanitized.replace(/(;\s*(DROP|DELETE|INSERT|UPDATE|CREATE))/gi, '')
-                            .replace(/(\bunion\s+select)/gi, '')
-                            .replace(/(--\s*[^\r\n]*)/g, '');
+        errors.push('Text contains potentially dangerous content');
+        // Basic cleanup - remove dangerous SQL patterns but preserve normal text
+        sanitized = sanitized.replace(/;\s*(DROP|DELETE\s+FROM|TRUNCATE|CREATE|ALTER)\s+/gi, '')
+                            .replace(/\bUNION\s+SELECT\s+/gi, '')
+                            .replace(/--\s*$|\/\*.*\*\//g, '');
       }
 
       return {
