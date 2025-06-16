@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Mail, MessageSquare, AlertTriangle, RefreshCw, TrendingUp } from 'lucide-react';
+import { Users, Mail, MessageSquare, AlertTriangle, RefreshCw, TrendingUp, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import DailyConversationsChart from '@/app/admin/components/DailyConversationsChart';
 
@@ -29,6 +29,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resettingUser, setResettingUser] = useState<string | null>(null);
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
@@ -44,6 +45,28 @@ export default function AnalyticsPage() {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const resetUserUsage = async (email: string) => {
+    setResettingUser(email);
+    try {
+      const response = await fetch('/api/admin/reset-user-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to reset user usage');
+      }
+      
+      // Refresh analytics data
+      await fetchAnalytics();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset user usage');
+    } finally {
+      setResettingUser(null);
     }
   };
 
@@ -245,6 +268,19 @@ export default function AnalyticsPage() {
                     <Badge variant="outline" className="text-gray-600">
                       {user.conversations_used}/{user.max_conversations}
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => resetUserUsage(user.email)}
+                      disabled={resettingUser === user.email}
+                      className="text-xs px-2 py-1 h-auto"
+                    >
+                      {resettingUser === user.email ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3 h-3" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               ))}

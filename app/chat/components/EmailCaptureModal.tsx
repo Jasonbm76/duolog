@@ -97,7 +97,12 @@ export default function EmailCaptureModal({
 
       const data = await response.json();
 
-      if (data.success) {
+      // Handle already verified case first (even with 400 status)
+      if (data.alreadyVerified) {
+        // Email already verified, proceed directly
+        toast.success('Email already verified! Starting conversation...');
+        await onSubmit(cleanEmail);
+      } else if (data.success) {
         if (data.devBypass) {
           // Development bypass - proceed directly
           toast.success('Development bypass: Email auto-verified');
@@ -107,9 +112,6 @@ export default function EmailCaptureModal({
           toast.success('Verification email sent! Check your inbox.');
           onVerificationRequired?.(cleanEmail);
         }
-      } else if (data.alreadyVerified) {
-        // Email already verified, proceed
-        await onSubmit(cleanEmail);
       } else {
         toast.error(data.error || 'Failed to send verification email');
       }
