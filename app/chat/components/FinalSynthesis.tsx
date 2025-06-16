@@ -9,6 +9,88 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+// Utility function to format timestamps relative to now
+const formatTimestamp = (timestamp: Date): string => {
+  const now = new Date();
+  const diffInMs = now.getTime() - timestamp.getTime();
+  const diffInSeconds = Math.floor(diffInMs / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  
+  if (diffInSeconds < 10) {
+    return 'just now';
+  } else if (diffInSeconds < 60) {
+    return `${diffInSeconds}s ago`;
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  } else {
+    return timestamp.toLocaleDateString();
+  }
+};
+
+// Custom Code Block Component with Copy Functionality (same as MessageBubble)
+function CodeBlock({ children, className, ...props }: any) {
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1] : '';
+  const code = String(children).replace(/\n$/, '');
+
+  const handleCodeCopy = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success('Code copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy code');
+    }
+  };
+
+  if (language) {
+    return (
+      <div className="relative group my-4">
+        <div className="flex items-center justify-between bg-neutral-800/50 px-4 py-2 rounded-t-lg border border-white/10">
+          <span className="text-xs text-white/70 font-mono">{language}</span>
+          <button
+            onClick={handleCodeCopy}
+            className="opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded"
+            title="Copy code"
+          >
+            <Copy className="w-3 h-3 text-white" />
+          </button>
+        </div>
+        <SyntaxHighlighter
+          language={language}
+          style={oneDark}
+          customStyle={{
+            margin: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderBottomLeftRadius: '0.5rem',
+            borderBottomRightRadius: '0.5rem',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderTop: 'none',
+          }}
+          {...props}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    );
+  }
+
+  return (
+    <code className="bg-white/10 text-white px-2 py-1 rounded text-xs sm:text-sm font-mono border border-white/20" {...props}>
+      {children}
+    </code>
+  );
+}
 
 interface FinalSynthesisProps {
   message: Message;
@@ -255,7 +337,11 @@ ${message.content}
             </div>
             <div>
               <h3 className="text-base lg:text-lg font-semibold text-on-dark">Final Answer</h3>
-              <p className="text-xs lg:text-sm text-on-dark-muted hidden sm:block">Synthesized from Claude & GPT-4's collaboration</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs lg:text-sm text-on-dark-muted">Synthesized from Claude & GPT-4's collaboration</p>
+                <span className="text-xs text-on-dark-muted">•</span>
+                <span className="text-xs text-on-dark-muted">{formatTimestamp(message.timestamp)}</span>
+              </div>
             </div>
           </div>
           
@@ -373,21 +459,10 @@ ${message.content}
               em: ({ children }: any) => (
                 <em className="italic text-white/95">{children}</em>
               ),
-              code: ({ children, className }: any) => {
-                const isBlock = className?.includes('language-');
-                if (isBlock) {
-                  return (
-                    <pre className="bg-black/30 text-white p-3 rounded-lg overflow-x-auto my-3 text-xs sm:text-sm">
-                      <code>{children}</code>
-                    </pre>
-                  );
-                }
-                return (
-                  <code className="bg-white/10 text-white px-2 py-1 rounded text-xs sm:text-sm font-mono border border-white/20">
-                    {children}
-                  </code>
-                );
-              },
+              code: CodeBlock,
+              pre: ({ children }: any) => (
+                <div className="my-4">{children}</div>
+              ),
               blockquote: ({ children }: any) => (
                 <blockquote className="border-l-4 border-white/30 pl-4 my-4 bg-white/5 py-2 rounded-r-lg text-white/80 italic text-xs sm:text-sm">
                   {children}

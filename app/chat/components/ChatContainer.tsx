@@ -1189,7 +1189,17 @@ export default function ChatContainer() {
                           {(() => {
                             if (!state.conversation) return null;
                             const aiMessages = state.conversation.messages.filter(m => m.role !== 'user');
-                            const totalRounds = isConversationComplete ? aiMessages.length : Math.max(aiMessages.length, activeBreathingRound || state.conversation.currentRound);
+                            // Calculate rounds intelligently based on actual conversation state
+                            const currentActiveRound = activeBreathingRound || state.conversation.currentRound;
+                            
+                            let totalRounds;
+                            if (isConversationComplete) {
+                              // When complete, only show actual AI messages
+                              totalRounds = aiMessages.length;
+                            } else {
+                              // During conversation, show completed + current active round
+                              totalRounds = Math.max(aiMessages.length, currentActiveRound);
+                            }
                             return Array.from({ length: totalRounds }, (_, i) => i + 1).map((round, index, array) => (
                               <div key={round} className="flex items-center">
                                 {/* Round Step */}

@@ -11,6 +11,27 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+// Utility function to format timestamps relative to now
+const formatTimestamp = (timestamp: Date): string => {
+  const now = new Date();
+  const diffInMs = now.getTime() - timestamp.getTime();
+  const diffInSeconds = Math.floor(diffInMs / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  
+  if (diffInSeconds < 10) {
+    return 'just now';
+  } else if (diffInSeconds < 60) {
+    return `${diffInSeconds}s ago`;
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  } else {
+    return timestamp.toLocaleDateString();
+  }
+};
+
 interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
@@ -279,6 +300,12 @@ export default function MessageBubble({ message, isStreaming = false, colorOverr
           </span>
           <span className="text-xs text-on-dark-muted">
             Round {message.round}
+          </span>
+          <span className="text-xs text-on-dark-muted">
+            •
+          </span>
+          <span className="text-xs text-on-dark-muted">
+            {formatTimestamp(message.timestamp)}
           </span>
         </div>
 
