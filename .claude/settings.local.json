@@ -57,7 +57,8 @@
       "Bash(git checkout:*)",
       "Bash(awk:*)",
       "Bash(PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/007_fix_daily_conversation_timezone.sql)",
-      "Bash(supabase projects:*)"
+      "Bash(supabase projects:*)",
+      "WebFetch(domain:cloud.google.com)"
     ],
     "deny": []
   }

@@ -149,3 +149,5 @@ dist
 .pnp.*
 .cursor/
 _design/
+
+certificates
