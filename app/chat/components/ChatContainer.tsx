@@ -207,16 +207,22 @@ export default function ChatContainer() {
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    // Detect upward swipe
+    // Detect upward swipe (Safari-compatible)
+    if (!e.touches || e.touches.length === 0) return;
+    
     const touch = e.touches[0];
-    if (touch && scrollContainerRef.current?.dataset.touchStartY) {
-      const startY = parseFloat(scrollContainerRef.current.dataset.touchStartY);
-      const deltaY = touch.clientY - startY;
-      
-      // If user swipes up (negative deltaY), disable auto-scroll
-      if (deltaY > 20) { // Threshold to avoid accidental triggers
-        setUserHasScrolled(true);
-      }
+    const container = scrollContainerRef.current;
+    
+    if (!touch || !container || !container.dataset.touchStartY) return;
+    
+    const startY = parseFloat(container.dataset.touchStartY);
+    if (isNaN(startY)) return;
+    
+    const deltaY = touch.clientY - startY;
+    
+    // If user swipes up (positive deltaY), disable auto-scroll
+    if (deltaY > 20) { // Threshold to avoid accidental triggers
+      setUserHasScrolled(true);
     }
   }, []);
 
@@ -311,22 +317,32 @@ export default function ChatContainer() {
           return;
         }
         
-        // Test API connectivity with a lightweight endpoint
-        const response = await fetch('/api/health', {
-          method: 'GET',
-          timeout: 5000,
-        } as RequestInit);
+        // Test API connectivity with a lightweight endpoint (Safari-compatible)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        if (response.ok) {
-          setConnectionStatus('connected');
-        } else {
-          setConnectionStatus('error');
+        try {
+          const response = await fetch('/api/health', {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+        
+          if (response.ok) {
+            setConnectionStatus('connected');
+          } else {
+            setConnectionStatus('error');
+          }
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === 'AbortError') {
+            setConnectionStatus('error'); // Timeout
+          } else {
+            setConnectionStatus('error');
+          }
+        } finally {
+          setLastConnectionCheck(new Date());
         }
-      } catch (error) {
-        setConnectionStatus('error');
-      } finally {
-        setLastConnectionCheck(new Date());
-      }
     };
 
     // Initial check
@@ -342,12 +358,28 @@ export default function ChatContainer() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Add scroll detection event listeners
+    // Add scroll detection event listeners (Safari-compatible)
     const scrollContainer = scrollContainerRef.current;
     if (scrollContainer) {
-      scrollContainer.addEventListener('wheel', handleWheel, { passive: true });
-      scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-      scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: true });
+      // Feature detection for passive listeners
+      let passiveSupported = false;
+      try {
+        const testOptions = {
+          get passive() {
+            passiveSupported = true;
+            return false;
+          }
+        };
+        window.addEventListener('test', null as any, testOptions);
+        window.removeEventListener('test', null as any);
+      } catch (err) {
+        passiveSupported = false;
+      }
+
+      const eventOptions = passiveSupported ? { passive: true } : false;
+      scrollContainer.addEventListener('wheel', handleWheel, eventOptions);
+      scrollContainer.addEventListener('touchstart', handleTouchStart, eventOptions);
+      scrollContainer.addEventListener('touchmove', handleTouchMove, eventOptions);
     }
 
     return () => {
