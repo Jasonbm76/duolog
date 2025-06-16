@@ -7,7 +7,7 @@ import { realConversationService } from '@/lib/services/real-conversation';
 import { mockConversationService } from '@/lib/services/mock-conversation-real-interface';
 import { Message } from '@/lib/types/chat';
 import { getMockConversationFlow, createMessageFromMockResponse } from '@/lib/mock-data/conversations';
-import { Bot, CheckCircle, AlertCircle, Settings, Brain } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, Settings, Brain, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import MessageBubble from './MessageBubble';
@@ -64,12 +64,72 @@ export default function ChatContainer() {
   const [showVerificationWaiting, setShowVerificationWaiting] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string>('');
   const [isExistingUser, setIsExistingUser] = useState(false);
+  
+  // Connection status tracking
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error'>('connected');
+  const [lastConnectionCheck, setLastConnectionCheck] = useState<Date | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   // Email validation helper
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
+  // Example prompts pool for random selection
+  const examplePrompts = [
+    // Business & Entrepreneurship
+    { emoji: "👗", text: "I want to start a sustainable fashion brand but don't know where to begin", prompt: "I want to start a sustainable fashion brand but don't know where to begin. Help me create a business plan." },
+    { emoji: "☕", text: "Help me create a business plan for a specialty coffee roastery", prompt: "I want to open a specialty coffee roastery focusing on single-origin beans. Help me create a comprehensive business plan." },
+    { emoji: "📱", text: "Design a social media strategy for my local bakery", prompt: "I own a small bakery and want to create an effective social media strategy to attract more customers. What should I focus on?" },
+    { emoji: "💡", text: "Validate my SaaS idea for freelance project management", prompt: "I have an idea for a SaaS tool that helps freelancers manage multiple projects. How do I validate this idea before building it?" },
+    
+    // Creative & Writing
+    { emoji: "✍️", text: "Write a creative story about a time traveler stuck in ancient Rome", prompt: "Write a short story about a time traveler who can only go backward in time and gets stuck in ancient Rome." },
+    { emoji: "🎵", text: "Help me write lyrics for a song about overcoming challenges", prompt: "I want to write lyrics for an uplifting song about overcoming personal challenges. Help me brainstorm themes and verses." },
+    { emoji: "🎨", text: "Create a concept for an interactive art installation", prompt: "I'm planning an interactive art installation for a local gallery. Help me develop a concept that engages visitors." },
+    { emoji: "📖", text: "Plot outline for a mystery novel set in Victorian London", prompt: "Help me create a plot outline for a mystery novel set in Victorian London with a female detective protagonist." },
+    
+    // Tech & Programming
+    { emoji: "🐍", text: "Help me understand Python decorators with practical examples", prompt: "I'm learning Python and struggling with understanding decorators. Can you explain them with practical examples?" },
+    { emoji: "⚛️", text: "Build a React component for user authentication", prompt: "I need to create a React component for user authentication with login and signup forms. Guide me through the best practices." },
+    { emoji: "🤖", text: "Explain machine learning concepts for beginners", prompt: "I'm new to machine learning and want to understand the basic concepts and algorithms. Where should I start?" },
+    { emoji: "🔐", text: "Secure my web application against common vulnerabilities", prompt: "I'm building a web application and want to ensure it's secure. What are the most important security measures I should implement?" },
+    
+    // Travel & Culture
+    { emoji: "🇯🇵", text: "Plan a 2-week Japan itinerary focused on traditional culture", prompt: "Plan a 2-week itinerary for Japan focusing on traditional culture, local food, and off-the-beaten-path destinations." },
+    { emoji: "🏔️", text: "Design a hiking adventure through the Swiss Alps", prompt: "I want to plan a 10-day hiking adventure through the Swiss Alps. Help me create an itinerary with accommodations." },
+    { emoji: "🏛️", text: "Cultural immersion trip to ancient Greek historical sites", prompt: "Plan a cultural immersion trip to Greece focusing on ancient historical sites and archaeological museums." },
+    
+    // Personal Development
+    { emoji: "🎤", text: "Help me improve my public speaking and overcome stage fright", prompt: "I want to improve my public speaking skills. Create a practice plan and help me overcome stage fright." },
+    { emoji: "🧘", text: "Create a morning routine to boost productivity and wellness", prompt: "I want to establish a morning routine that improves my productivity and overall wellness. What should I include?" },
+    { emoji: "💪", text: "Design a workout plan for someone who works from home", prompt: "I work from home and need a fitness routine that doesn't require a gym. Create a workout plan I can do at home." },
+    { emoji: "📚", text: "Learn a new language efficiently as an adult", prompt: "I'm 30 and want to learn Spanish efficiently. What's the best approach for adult language learning?" },
+    
+    // Health & Wellness
+    { emoji: "🥗", text: "Create a meal prep plan for healthy eating on a budget", prompt: "I want to eat healthier but I'm on a tight budget and have limited time. Help me create a meal prep plan." },
+    { emoji: "😴", text: "Improve my sleep quality and establish better sleep habits", prompt: "I have trouble sleeping and want to improve my sleep quality. What changes should I make to my routine?" },
+    { emoji: "🧠", text: "Techniques to reduce stress and manage anxiety naturally", prompt: "I've been feeling overwhelmed lately. What are some natural techniques to reduce stress and manage anxiety?" },
+    
+    // Home & DIY
+    { emoji: "🏡", text: "Design a small apartment to maximize space and functionality", prompt: "I live in a 500 sq ft apartment and want to maximize space while keeping it stylish. Give me design ideas." },
+    { emoji: "🌱", text: "Start an indoor herb garden for cooking", prompt: "I want to grow herbs indoors for cooking. What are the best herbs to start with and how do I set up a system?" },
+    { emoji: "🔨", text: "Build a custom bookshelf for my living room", prompt: "I want to build a custom bookshelf that fits perfectly in my living room. Guide me through the planning and construction." },
+    
+    // Learning & Education
+    { emoji: "🎯", text: "Master the fundamentals of digital marketing", prompt: "I want to learn digital marketing from scratch. Create a learning plan that covers all the essential skills." },
+    { emoji: "📊", text: "Understand data analysis and visualization basics", prompt: "I need to learn data analysis for my job. Teach me the basics of working with data and creating visualizations." },
+    { emoji: "🎪", text: "Learn photography composition and lighting techniques", prompt: "I want to improve my photography skills. Teach me about composition, lighting, and post-processing techniques." }
+  ];
+
+  // Randomly select 5 examples on component mount
+  const [selectedExamples, setSelectedExamples] = useState<typeof examplePrompts>([]);
+
+  useEffect(() => {
+    const shuffled = [...examplePrompts].sort(() => 0.5 - Math.random());
+    setSelectedExamples(shuffled.slice(0, 5));
+  }, []);
 
   // Stable message ID generation to avoid hydration issues
   const generateMessageId = (model: string, round: number) => {
@@ -173,6 +233,72 @@ export default function ChatContainer() {
     }
     
   }, []); // Remove isMockMode dependency to prevent unnecessary regeneration
+
+  // Initialize client-side state for connection monitoring
+  useEffect(() => {
+    setIsClient(true);
+    setLastConnectionCheck(new Date());
+  }, []);
+
+  // Connection status monitoring
+  useEffect(() => {
+    if (!isClient) return;
+    const checkConnection = async () => {
+      try {
+        setConnectionStatus('connecting');
+        
+        // Check if we're online
+        if (!navigator.onLine) {
+          setConnectionStatus('disconnected');
+          return;
+        }
+        
+        // Test API connectivity with a lightweight endpoint
+        const response = await fetch('/api/health', {
+          method: 'GET',
+          timeout: 5000,
+        } as RequestInit);
+        
+        if (response.ok) {
+          setConnectionStatus('connected');
+        } else {
+          setConnectionStatus('error');
+        }
+      } catch (error) {
+        setConnectionStatus('error');
+      } finally {
+        setLastConnectionCheck(new Date());
+      }
+    };
+
+    // Initial check
+    checkConnection();
+
+    // Periodic checks every 30 seconds
+    const interval = setInterval(checkConnection, 30000);
+
+    // Listen for online/offline events
+    const handleOnline = () => setConnectionStatus('connected');
+    const handleOffline = () => setConnectionStatus('disconnected');
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isClient]);
+
+  // Update connection status during active conversations
+  useEffect(() => {
+    if (state.isLoading || processingRef.current) {
+      setConnectionStatus('connecting');
+    } else if (state.error) {
+      setConnectionStatus('error');
+    }
+  }, [state.isLoading, state.error]);
 
   // Load saved keys on component mount
   useEffect(() => {
@@ -872,8 +998,60 @@ export default function ChatContainer() {
           sessionId={sessionId}
           onSettingsClick={() => setShowSettings(true)}
           onUsageStatusChange={handleUsageStatusChange}
+          connectionStatus={connectionStatus}
+          lastConnectionCheck={lastConnectionCheck}
         />
       </div>
+
+      {/* Connection Status Indicator - Desktop Only */}
+      {isClient && (
+        <div className="fixed top-[37px] right-[20px] z-[60] group hidden lg:block">
+          <div className="flex flex-col items-center">
+            <div 
+              className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 cursor-pointer",
+                connectionStatus === 'connected' && "bg-success/20 text-success hover:bg-success/30",
+                connectionStatus === 'connecting' && "bg-warning/20 text-warning animate-pulse hover:bg-warning/30",
+                connectionStatus === 'disconnected' && "bg-error/20 text-error hover:bg-error/30",
+                connectionStatus === 'error' && "bg-error/20 text-error animate-pulse hover:bg-error/30"
+              )}
+            >
+              {connectionStatus === 'connected' && <Wifi className="w-4 h-4" />}
+              {connectionStatus === 'connecting' && <Wifi className="w-4 h-4" />}
+              {connectionStatus === 'disconnected' && <WifiOff className="w-4 h-4" />}
+              {connectionStatus === 'error' && <AlertCircle className="w-4 h-4" />}
+            </div>
+            
+            {/* Connection Badge */}
+            <div className="mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-on-dark/10 text-on-dark/60">
+              Connection
+            </div>
+            
+            {/* Tooltip */}
+            <div className="absolute top-full mt-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              <div className="bg-background border border-on-dark/20 rounded-lg p-3 shadow-lg max-w-48 text-sm">
+                <div className="text-on-dark font-medium mb-1">
+                  {connectionStatus === 'connected' && 'Connected'}
+                  {connectionStatus === 'connecting' && 'Connecting...'}
+                  {connectionStatus === 'disconnected' && 'Disconnected'}
+                  {connectionStatus === 'error' && 'Connection Error'}
+                </div>
+                <div className="text-on-dark/70">
+                  {connectionStatus === 'connected' && 'All systems operational'}
+                  {connectionStatus === 'connecting' && 'Establishing connection...'}
+                  {connectionStatus === 'disconnected' && 'No internet connection'}
+                  {connectionStatus === 'error' && 'API connection failed'}
+                </div>
+                {lastConnectionCheck && connectionStatus === 'connected' && (
+                  <div className="text-on-dark/50 text-xs mt-1">
+                    Last checked: {lastConnectionCheck.toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Chat Container */}
       <div className={`flex flex-col h-screen transition-opacity duration-200 ${isStatusDropdownOpen ? 'opacity-20' : 'opacity-100'}`}>
@@ -994,40 +1172,29 @@ export default function ChatContainer() {
                         <h2 className="lg:text-2xl text-xl font-bold text-on-dark mb-3">
                           Welcome to DuoLog
                         </h2>
-                        <p className="text-on-dark max-w-md mx-auto mb-6 lg:text-base text-sm">
-                          Start a conversation and watch Claude and GPT-4 collaborate to refine your prompt across 3 rounds of analysis.
+                        <p className="text-on-dark max-w-lg mx-auto mb-6 lg:text-base text-sm">
+                          Ask anything—from creative projects and business strategy to learning new skills or solving everyday problems. Get the combined expertise of two AI minds working together.
                         </p>
                         
                         {/* Example Prompts */}
-                        <div className="grid gap-3 mb-6">
-                          <h3 className="lg:text-sm text-xs font-medium text-on-dark mb-2">Try these examples:</h3>
-                          <div className="grid gap-2 lg:text-sm text-xs">
-                            <button 
-                              onClick={() => handleStartConversation("I want to start a vibe coding website but have no idea how to start it")}
-                              className="lg:p-3 p-2 text-left border border-on-dark/20 rounded-lg hover:border-primary hover:bg-primary/10 transition-colors text-on-dark flex items-center lg:gap-3 gap-2"
-                              disabled={!canStartNew}
-                            >
-                              <span className="lg:text-lg text-base">💻</span>
-                              <span>I want to start a vibe coding website but have no idea how to start it</span>
-                            </button>
-                            <button 
-                              onClick={() => handleStartConversation("I have an exam on the American Civil War tomorrow. What are the key events, causes, and outcomes I should focus on studying?")}
-                              className="lg:p-3 p-2 text-left border border-on-dark/20 rounded-lg hover:border-primary hover:bg-primary/10 transition-colors text-on-dark flex items-center lg:gap-3 gap-2"
-                              disabled={!canStartNew}
-                            >
-                              <span className="lg:text-lg text-base">📚</span>
-                              <span>Help me study for my Civil War history exam</span>
-                            </button>
-                            <button 
-                              onClick={() => handleStartConversation("How do I make the perfect homemade pizza dough? I want it crispy on the outside but chewy inside.")}
-                              className="lg:p-3 p-2 text-left border border-on-dark/20 rounded-lg hover:border-primary hover:bg-primary/10 transition-colors text-on-dark flex items-center lg:gap-3 gap-2"
-                              disabled={!canStartNew}
-                            >
-                              <span className="lg:text-lg text-base">🍕</span>
-                              <span>Teach me how to make perfect pizza dough</span>
-                            </button>
+                        {selectedExamples.length > 0 && (
+                          <div className="grid gap-3 mb-6">
+                            <h3 className="lg:text-sm text-xs font-medium text-on-dark mb-2">Here are some examples from different categories:</h3>
+                            <div className="grid gap-2 lg:text-sm text-xs">
+                              {selectedExamples.map((example, index) => (
+                                <button 
+                                  key={index}
+                                  onClick={() => handleStartConversation(example.prompt)}
+                                  className="lg:p-3 p-2 text-left border border-on-dark/20 rounded-lg hover:border-primary hover:bg-primary/10 transition-colors text-on-dark flex items-center lg:gap-3 gap-2"
+                                  disabled={!canStartNew}
+                                >
+                                  <span className="lg:text-lg text-base">{example.emoji}</span>
+                                  <span>{example.text}</span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
                         {/* OR divider */}
                         <div className="flex items-center mb-4">
@@ -1047,20 +1214,57 @@ export default function ChatContainer() {
                   )}
 
                   {/* Conversation Messages */}
-                  {state.conversation?.messages.map((message) => (
-                    message.isFinalSynthesis ? (
-                      <FinalSynthesis 
-                        key={message.id} 
-                        message={message}
-                      />
-                    ) : (
-                      <MessageBubble 
-                        key={message.id} 
-                        message={message} 
-                        isStreaming={message.isStreaming}
-                      />
-                    )
-                  ))}
+                  {state.conversation?.messages.map((message, index) => {
+                    const previousMessage = index > 0 ? state.conversation?.messages[index - 1] : null;
+                    const isNewRound = !previousMessage || message.round !== previousMessage.round;
+                    const isFirstMessageInRound = isNewRound;
+                    
+                    return (
+                      <div key={message.id}>
+                        {/* Round Separator */}
+                        {isFirstMessageInRound && message.round > 1 && !message.isFinalSynthesis && (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="flex items-center gap-4 text-on-dark/40">
+                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-on-dark/20 to-transparent"></div>
+                              <div className="flex items-center gap-2 px-4 py-2 glass-card">
+                                <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></div>
+                                <span className="text-sm font-medium">Round {message.round}</span>
+                                <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></div>
+                              </div>
+                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-on-dark/20 to-transparent"></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Final Synthesis Separator */}
+                        {message.isFinalSynthesis && (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="flex items-center gap-4 text-on-dark/40">
+                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-success/20 to-transparent"></div>
+                              <div className="flex items-center gap-2 px-4 py-2 glass-card">
+                                <div className="w-2 h-2 rounded-full bg-success/60 animate-pulse"></div>
+                                <span className="text-sm font-medium">Final Synthesis</span>
+                                <div className="w-2 h-2 rounded-full bg-success/60 animate-pulse"></div>
+                              </div>
+                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-success/20 to-transparent"></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Message Content */}
+                        {message.isFinalSynthesis ? (
+                          <FinalSynthesis 
+                            message={message}
+                          />
+                        ) : (
+                          <MessageBubble 
+                            message={message} 
+                            isStreaming={message.isStreaming}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Typing Indicator */}
                   {showTypingIndicator && (

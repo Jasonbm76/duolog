@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Activity, Settings, RotateCcw, Zap, TrendingUp, AlertCircle, CheckCircle, X, Wifi, WifiOff } from 'lucide-react';
 import { ConversationTokens, tokenTracker } from '@/lib/services/token-tracker';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -20,6 +20,8 @@ interface UnifiedStatusBarProps {
   onSettingsClick: () => void;
   className?: string;
   onUsageStatusChange?: (newStatus: UsageStatus | null) => void;
+  connectionStatus?: 'connected' | 'connecting' | 'disconnected' | 'error';
+  lastConnectionCheck?: Date | null;
 }
 
 export default function UnifiedStatusBar({ 
@@ -29,7 +31,9 @@ export default function UnifiedStatusBar({
   sessionId,
   onSettingsClick,
   className,
-  onUsageStatusChange
+  onUsageStatusChange,
+  connectionStatus = 'connected',
+  lastConnectionCheck
 }: UnifiedStatusBarProps) {
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
@@ -331,6 +335,55 @@ export default function UnifiedStatusBar({
                   )}
                 </div>
               )}
+
+              {/* Connection Status Section */}
+              <div className="mb-4 p-3 bg-on-dark/5 border border-on-dark/10 rounded-lg">
+                <h4 className="text-sm font-medium text-on-dark mb-3 flex items-center gap-2">
+                  {connectionStatus === 'connected' && <Wifi className="w-4 h-4 text-success" />}
+                  {connectionStatus === 'connecting' && <Wifi className="w-4 h-4 text-warning" />}
+                  {connectionStatus === 'disconnected' && <WifiOff className="w-4 h-4 text-error" />}
+                  {connectionStatus === 'error' && <AlertCircle className="w-4 h-4 text-error" />}
+                  Connection Status
+                </h4>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-on-dark-muted text-sm">Status</span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      connectionStatus === 'connected' && "text-success",
+                      connectionStatus === 'connecting' && "text-warning",
+                      connectionStatus === 'disconnected' && "text-error", 
+                      connectionStatus === 'error' && "text-error"
+                    )}>
+                      {connectionStatus === 'connected' && 'Connected'}
+                      {connectionStatus === 'connecting' && 'Connecting...'}
+                      {connectionStatus === 'disconnected' && 'Disconnected'}
+                      {connectionStatus === 'error' && 'Connection Error'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-on-dark-muted text-sm">API Health</span>
+                    <span className={cn(
+                      "text-sm",
+                      connectionStatus === 'connected' && "text-success",
+                      connectionStatus !== 'connected' && "text-error"
+                    )}>
+                      {connectionStatus === 'connected' ? 'Operational' : 'Unavailable'}
+                    </span>
+                  </div>
+                  
+                  {lastConnectionCheck && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-on-dark-muted text-sm">Last Check</span>
+                      <span className="text-on-dark text-sm font-mono">
+                        {lastConnectionCheck.toLocaleTimeString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* System Info */}
               <div className="mb-4 p-3 bg-on-dark/5 border border-on-dark/10 rounded-lg">
