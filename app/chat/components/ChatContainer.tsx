@@ -307,6 +307,7 @@ export default function ChatContainer() {
   // Connection status monitoring
   useEffect(() => {
     if (!isClient) return;
+    
     const checkConnection = async () => {
       try {
         setConnectionStatus('connecting');
@@ -343,6 +344,10 @@ export default function ChatContainer() {
         } finally {
           setLastConnectionCheck(new Date());
         }
+      } catch (outerError) {
+        setConnectionStatus('error');
+        setLastConnectionCheck(new Date());
+      }
     };
 
     // Initial check
