@@ -152,20 +152,60 @@ export default function ChatContainer() {
     loadSavedKeys();
   }, [sessionId]);
 
-  // Check for existing users on component mount (but don't load email)
+  // Check for existing users and restore email on component mount
   useEffect(() => {
-    const checkExistingUser = () => {
+    const checkExistingUser = async () => {
       if (typeof window !== 'undefined') {
-        // Only check if user has existing fingerprint-based usage (migration case)
+        // Check if user has existing fingerprint-based usage (migration case)
         const existingFingerprint = localStorage.getItem('user_fingerprint');
         if (existingFingerprint) {
           setIsExistingUser(true);
+        }
+
+        // Try to restore saved email from localStorage
+        const savedEmail = localStorage.getItem('user_email');
+        if (savedEmail && isValidEmail(savedEmail)) {
+          try {
+            // Verify the email is still valid and verified on the server
+            const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
+            const identifiers = createUserIdentifier();
+            
+            const response = await fetch('/api/chat/email-usage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: savedEmail,
+                fingerprint: identifiers.fingerprint,
+                sessionId: sessionId || 'temp'
+              })
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result.emailVerified) {
+                // Email is verified, restore it
+                setUserEmail(savedEmail);
+                console.log('Restored verified email from localStorage:', savedEmail);
+              } else {
+                // Email exists but not verified, remove from localStorage
+                localStorage.removeItem('user_email');
+                console.log('Removed unverified email from localStorage');
+              }
+            } else {
+              // API error, remove email from localStorage to be safe
+              localStorage.removeItem('user_email');
+            }
+          } catch (error) {
+            console.error('Error validating saved email:', error);
+            // Remove email from localStorage if validation fails
+            localStorage.removeItem('user_email');
+          }
         }
       }
     };
 
     checkExistingUser();
-  }, []);
+  }, [sessionId]); // Depend on sessionId so it runs after sessionId is generated
 
   // Load usage status whenever sessionId, userEmail, or userKeys change
   useEffect(() => {
@@ -220,6 +260,10 @@ export default function ChatContainer() {
   const handleEmailSubmit = async (email: string) => {
     try {
       setUserEmail(email);
+      // Save verified email to localStorage for future visits
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_email', email);
+      }
       setShowEmailCapture(false);
       setShowVerificationWaiting(false);
       
