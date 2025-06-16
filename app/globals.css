@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area support for mobile devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 @layer base {
   /* Heading defaults with Inter font, bold weight, and proper spacing */
   h1, h2, h3, h4, h5, h6 {

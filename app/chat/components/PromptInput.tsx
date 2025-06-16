@@ -321,7 +321,7 @@ export default function PromptInput({
       </div>
 
       {/* Mobile Version - Full Width Like Reference */}
-      <div className="lg:hidden flex-shrink-0 px-4 py-3 bg-background/95 backdrop-blur-xl border-t border-white/10">
+      <div className="lg:hidden flex-shrink-0 px-4 py-3">
         <div className="flex items-center gap-3 bg-on-dark/10 rounded-full p-2">
 
           {/* Microphone Button */}

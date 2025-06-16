@@ -890,7 +890,7 @@ export default function ChatContainer() {
               <div 
                 ref={scrollContainerRef}
                 className={cn(
-                  "flex-1 overflow-y-auto scrollbar-hide lg:py-6 py-3 transition-all duration-300",
+                  "flex-1 overflow-y-auto scrollbar-hide lg:py-6 py-3 lg:pb-6 pb-[120px] transition-all duration-300",
                   state.conversation?.messages.some(msg => msg.isStreaming) && "scroll-smooth"
                 )}
                 onScroll={handleScroll}
@@ -1275,8 +1275,8 @@ export default function ChatContainer() {
 
         {/* Fixed Input Area - hide if user is out of usage */}
         {!(usageStatus && usageStatus.used >= usageStatus.limit && !usageStatus.hasOwnKeys) && (
-          <div ref={promptInputRef} className="mb-6 px-0">
-          <div className="container-fluid mx-auto lg:max-w-4xl max-w-full">
+          <div ref={promptInputRef} className="lg:mb-6 lg:px-0 lg:static fixed bottom-0 left-0 right-0 lg:bg-transparent bg-background/95 backdrop-blur-xl lg:border-0 border-t border-white/10 z-50 lg:pb-0 pb-safe">
+          <div className="container-fluid mx-auto lg:max-w-4xl max-w-full lg:p-0 p-0">
             <PromptInput
               onSubmit={isConversationComplete ? handleContinueConversation : handleStartConversation}
               onStop={handleStop}

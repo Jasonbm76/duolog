@@ -17,7 +17,14 @@ export const metadata: Metadata = {
   title: isDevelopment ? `Local | ${baseTitle}` : baseTitle,
   description:
     "Two AI minds, better answers for everything. Watch them collaborate in real-time to give you the best possible answer.",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
