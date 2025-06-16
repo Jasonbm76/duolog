@@ -47,9 +47,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Send admin verification email
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    console.log('🔍 Environment variables check:', {
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+    });
+    
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   process.env.NEXT_PUBLIC_BASE_URL || 
                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
                    'http://localhost:5001';
+                   
+    console.log('🔗 Admin verification URL being used:', baseUrl);
     const verificationUrl = `${baseUrl}/admin/verify?token=${tokenResult.token}`;
     
     const emailResult = await emailService.sendEmail({

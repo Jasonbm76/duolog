@@ -199,6 +199,7 @@ function conversationReducer(state: EnhancedConversationState, action: Conversat
         ...state,
         conversation: {
           ...state.conversation,
+          status: 'active', // Reset status to active when continuing
           messages: [...state.conversation.messages, {
             id: action.payload.messageId,
             role: 'user',
@@ -209,6 +210,7 @@ function conversationReducer(state: EnhancedConversationState, action: Conversat
           currentRound: state.conversation.currentRound + 1,
         },
         isLoading: true,
+        error: null, // Clear any errors
       };
 
     case 'SET_ERROR':
