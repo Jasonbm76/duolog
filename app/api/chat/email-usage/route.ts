@@ -131,46 +131,5 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const body: UsageRequest = await request.json();
-    const { email, fingerprint, sessionId, userKeys } = body;
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
-
-    // Extract IP address
-    const { extractIPAddress } = await import('@/lib/utils/ip-utils');
-    const ip = extractIPAddress(request);
-
-    const identifiers = {
-      email,
-      fingerprint,
-      ip,
-      sessionId
-    };
-
-    // Increment usage
-    const success = await emailUsageTracker.increment(request, identifiers, userKeys);
-    
-    if (!success) {
-      return NextResponse.json({ 
-        error: 'Failed to increment usage' 
-      }, { status: 500 });
-    }
-
-    // Return updated status
-    const updatedStatus = await emailUsageTracker.checkLimit(request, identifiers, userKeys);
-
-    return NextResponse.json({
-      success: true,
-      ...updatedStatus
-    });
-  } catch (error) {
-    console.error('Error incrementing email usage:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 });
-  }
-}
+// PATCH method removed - usage should only be incremented in the collaborate endpoint
+// to prevent double-counting conversations

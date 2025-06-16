@@ -179,12 +179,17 @@ export async function POST(request: NextRequest) {
 Provide a thorough, helpful response. After you respond, Claude will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.`,
             apiKey: userKeys?.openai,
             onChunk: (chunk) => {
-              writer.write({
-                type: 'content_chunk',
-                round: currentRound,
-                model: 'gpt-4',
-                content: chunk,
-              });
+              try {
+                writer.write({
+                  type: 'content_chunk',
+                  round: currentRound,
+                  model: 'gpt-4',
+                  content: chunk,
+                });
+              } catch (error) {
+                // Stream might be closed, ignore write errors
+                console.warn('Failed to write chunk to closed stream');
+              }
             },
           });
 
@@ -240,12 +245,17 @@ Provide a thorough, helpful response. After you respond, Claude will review your
 Provide a thorough, helpful response. Focus on being comprehensive and addressing all aspects of their question.`,
             apiKey: userKeys?.anthropic,
             onChunk: (chunk) => {
-              writer.write({
-                type: 'content_chunk',
-                round: currentRound,
-                model: 'claude',
-                content: chunk,
-              });
+              try {
+                writer.write({
+                  type: 'content_chunk',
+                  round: currentRound,
+                  model: 'claude',
+                  content: chunk,
+                });
+              } catch (error) {
+                // Stream might be closed, ignore write errors
+                console.warn('Failed to write chunk to closed stream');
+              }
             },
           });
 
@@ -305,12 +315,17 @@ If you think it could be improved or expanded, provide your own insights that bu
 Be honest about whether the current answer is sufficient or needs enhancement.`,
                 apiKey: userKeys?.openai,
                 onChunk: (chunk) => {
-                  writer.write({
-                    type: 'content_chunk',
-                    round: currentRound,
-                    model: 'gpt-4',
-                    content: chunk,
-                  });
+                  try {
+                    writer.write({
+                      type: 'content_chunk',
+                      round: currentRound,
+                      model: 'gpt-4',
+                      content: chunk,
+                    });
+                  } catch (error) {
+                    // Stream might be closed, ignore write errors
+                    console.warn('Failed to write chunk to closed stream');
+                  }
                 },
               });
 
@@ -349,12 +364,17 @@ If you think the response could still be improved or if there are important aspe
 Be honest about whether the current combined answer is sufficient or needs more work.`,
               apiKey: userKeys?.anthropic,
               onChunk: (chunk) => {
-                writer.write({
-                  type: 'content_chunk',
-                  round: currentRound,
-                  model: 'claude',
-                  content: chunk,
-                });
+                try {
+                  writer.write({
+                    type: 'content_chunk',
+                    round: currentRound,
+                    model: 'claude',
+                    content: chunk,
+                  });
+                } catch (error) {
+                  // Stream might be closed, ignore write errors
+                  console.warn('Failed to write chunk to closed stream');
+                }
               },
             });
 
@@ -403,8 +423,10 @@ Be honest about whether the current combined answer is sufficient or needs more 
             `${msg.role === 'claude' ? 'Claude' : 'GPT-4'}: ${msg.content}`
           ).join('\n\n');
 
-          const finalSynthesis = await anthropic.streamCompletion({
-            prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
+          let finalSynthesis;
+          try {
+            finalSynthesis = await anthropic.streamCompletion({
+              prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
 
 Here's the complete discussion:
 ${conversationContext}
@@ -417,17 +439,57 @@ Create a concise, well-structured final answer that:
 5. Uses appropriate formatting (bullet points, numbered lists, etc.) for clarity
 
 Do not mention the collaboration process or that this is a synthesis. Just provide the clean, final answer.`,
-            apiKey: userKeys?.anthropic,
-            onChunk: (chunk) => {
-              writer.write({
-                type: 'content_chunk',
-                round: currentRound,
-                model: 'claude',
-                content: chunk,
-                isFinalSynthesis: true,
-              });
-            },
-          });
+              apiKey: userKeys?.anthropic,
+              onChunk: (chunk) => {
+                try {
+                  writer.write({
+                    type: 'content_chunk',
+                    round: currentRound,
+                    model: 'claude',
+                    content: chunk,
+                    isFinalSynthesis: true,
+                  });
+                } catch (error) {
+                  // Stream might be closed, ignore write errors
+                  console.warn('Failed to write chunk to closed stream');
+                }
+              },
+            });
+          } catch (anthropicError) {
+            console.warn('Anthropic overloaded for final synthesis, falling back to GPT-4:', anthropicError);
+            
+            // Fallback to GPT-4 for final synthesis
+            finalSynthesis = await openai.streamCompletion({
+              prompt: `You are GPT-4 creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
+
+Here's the complete discussion:
+${conversationContext}
+
+Create a concise, well-structured final answer that:
+1. Synthesizes the best insights from both Claude and GPT-4
+2. Presents the information in a clear, actionable format
+3. Removes any redundancy or back-and-forth discussion
+4. Focuses on giving the user exactly what they need
+5. Uses appropriate formatting (bullet points, numbered lists, etc.) for clarity
+
+Do not mention the collaboration process or that this is a synthesis. Just provide the clean, final answer.`,
+              apiKey: userKeys?.openai,
+              onChunk: (chunk) => {
+                try {
+                  writer.write({
+                    type: 'content_chunk',
+                    round: currentRound,
+                    model: 'gpt-4',
+                    content: chunk,
+                    isFinalSynthesis: true,
+                  });
+                } catch (error) {
+                  // Stream might be closed, ignore write errors
+                  console.warn('Failed to write chunk to closed stream');
+                }
+              },
+            });
+          }
 
           if (finalSynthesis.usage) {
             await writer.write({
