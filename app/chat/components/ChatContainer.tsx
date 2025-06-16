@@ -56,6 +56,7 @@ export default function ChatContainer() {
   const lastScrollTop = useRef(0);
   const isFinalSynthesisRef = useRef(false);
   const lastRoundKeyRef = useRef<string | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Email-based usage tracking
   const [userEmail, setUserEmail] = useState<string>('');
@@ -101,7 +102,7 @@ export default function ChatContainer() {
     lastScrollTop.current = scrollTop;
   }, []);
 
-  // Auto-scroll to bottom when new messages are added (only if user hasn't manually scrolled)
+  // Enhanced auto-scroll with smooth streaming behavior
   useEffect(() => {
     if (!userHasScrolled && messagesEndRef.current && (
       state.conversation?.messages.length || 
@@ -122,6 +123,47 @@ export default function ChatContainer() {
     state.currentProcessingStatus,
     userHasScrolled
   ]);
+
+  // Throttled smooth scroll function for better performance
+  const smoothScrollToBottom = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!userHasScrolled && messagesEndRef.current) {
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'end'
+          });
+        });
+      }
+    }, 100); // Throttle to 100ms for smooth but responsive scrolling
+  }, [userHasScrolled]);
+
+  // Smooth scroll during AI typing/streaming content
+  useEffect(() => {
+    if (!userHasScrolled && state.conversation?.messages) {
+      const streamingMessage = state.conversation.messages.find(msg => msg.isStreaming);
+      if (streamingMessage) {
+        smoothScrollToBottom();
+      }
+    }
+  }, [
+    state.conversation?.messages.map(msg => msg.content).join(''), // Re-run when any message content changes
+    userHasScrolled,
+    smoothScrollToBottom
+  ]);
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Generate sessionId after hydration - only when truly needed
   useEffect(() => {
@@ -170,15 +212,13 @@ export default function ChatContainer() {
             const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
             const identifiers = createUserIdentifier();
             
-            const response = await fetch('/api/chat/email-usage', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: savedEmail,
-                fingerprint: identifiers.fingerprint,
-                sessionId: sessionId || 'temp'
-              })
+            const params = new URLSearchParams({
+              email: savedEmail,
+              fingerprint: identifiers.fingerprint,
+              sessionId: sessionId || 'temp'
             });
+            
+            const response = await fetch(`/api/chat/email-usage?${params}`);
 
             if (response.ok) {
               const result = await response.json();
@@ -849,7 +889,10 @@ export default function ChatContainer() {
               {/* Messages Container with internal scrolling */}
               <div 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto scrollbar-hide lg:py-6 py-3"
+                className={cn(
+                  "flex-1 overflow-y-auto scrollbar-hide lg:py-6 py-3 transition-all duration-300",
+                  state.conversation?.messages.some(msg => msg.isStreaming) && "scroll-smooth"
+                )}
                 onScroll={handleScroll}
               >
                 <div className="lg:space-y-6 space-y-4">

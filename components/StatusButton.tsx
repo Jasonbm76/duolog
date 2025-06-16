@@ -34,6 +34,7 @@ export default function StatusButton({
   const [tokens, setTokens] = useState<ConversationTokens | null>(null);
   const [sessionTotal, setSessionTotal] = useState({ tokens: 0, cost: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when dropdown state changes
@@ -84,11 +85,32 @@ export default function StatusButton({
   }, [conversationId, isMockMode]);
 
   const handleResetUsage = async () => {
+    if (isResetting) return;
+    
     try {
-      const response = await fetch('/api/dev/reset-usage', {
+      setIsResetting(true);
+      
+      // Get user email from localStorage
+      const userEmail = localStorage.getItem('user_email');
+      console.log('Reset Usage - Email from localStorage:', userEmail);
+      
+      if (!userEmail) {
+        console.log('No email found in localStorage. Available keys:', Object.keys(localStorage));
+        toast.error('No email found - please restart your session');
+        return;
+      }
+
+      console.log('Sending reset request for email:', userEmail);
+      const response = await fetch('/api/dev/reset-email-usage', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset_counts' }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify({ 
+          action: 'reset_counts',
+          email: userEmail
+        }),
       });
       
       const result = await response.json();
@@ -111,19 +133,30 @@ export default function StatusButton({
     } catch (error) {
       console.error('Failed to reset usage:', error);
       toast.error('Network error - failed to reset usage');
+    } finally {
+      setIsResetting(false);
     }
   };
 
   const refreshUsageStatus = async () => {
     try {
+      // Get user email from localStorage
+      const userEmail = localStorage.getItem('user_email');
+      console.log('Refresh Usage - Email from localStorage:', userEmail);
+      
+      if (!userEmail) {
+        console.log('No email found for refresh - user needs to provide email');
+        return;
+      }
+
       // Import fingerprinting utilities (dynamic import for client-side only)
       const { createUserIdentifier } = await import('@/lib/utils/fingerprint');
       const identifiers = createUserIdentifier();
       
       const params = new URLSearchParams({
+        email: userEmail,
         sessionId,
         fingerprint: identifiers.fingerprint,
-        persistentId: identifiers.persistentId,
       });
 
       // Check for user keys in localStorage and include them
@@ -140,7 +173,7 @@ export default function StatusButton({
         console.error('Failed to load user keys for refresh:', error);
       }
       
-      const response = await fetch(`/api/chat/usage?${params}`);
+      const response = await fetch(`/api/chat/email-usage?${params}`);
       if (response.ok) {
         const data = await response.json();
         onUsageStatusChange?.(data);
@@ -280,10 +313,11 @@ export default function StatusButton({
                   {process.env.NODE_ENV === 'development' && (
                     <button
                       onClick={handleResetUsage}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium"
+                      disabled={isResetting}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 border border-warning/25 text-warning rounded-lg hover:bg-warning/20 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <RotateCcw className="w-4 h-4" />
-                      Reset Usage
+                      <RotateCcw className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} />
+                      {isResetting ? 'Resetting...' : 'Reset Usage'}
                     </button>
                   )}
                 </div>

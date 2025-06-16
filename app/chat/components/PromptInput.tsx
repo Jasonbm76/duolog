@@ -34,6 +34,7 @@ export default function PromptInput({
   const [prompt, setPrompt] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 
@@ -46,9 +47,14 @@ export default function PromptInput({
     }
   }, [prompt]);
 
-  // Initialize voice recording with Whisper API
+  // Initialize client-side state first (hydration-safe)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setIsClient(true);
+  }, []);
+
+  // Initialize voice recording with Whisper API (only after client hydration)
+  useEffect(() => {
+    if (isClient) {
       console.log('Initializing voice recording with Whisper API...');
       
       // Check for MediaRecorder support
@@ -60,7 +66,7 @@ export default function PromptInput({
         console.warn('❌ MediaRecorder not supported in this browser');
       }
     }
-  }, []);
+  }, [isClient]);
 
   // Audio recording for Whisper API
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -236,31 +242,35 @@ export default function PromptInput({
 
 
           {/* Microphone Button - Desktop */}
-          <button
-            onClick={toggleRecording}
-            disabled={disabled || isLoading}
-            className={cn(
-              "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              isRecording
-                ? "bg-error/20 border border-error/40 text-error animate-pulse hover:bg-error/30"
-                : speechSupported
-                  ? "bg-on-dark/10 hover:bg-on-dark/20 text-on-dark"
-                  : "bg-on-dark/5 text-on-dark/30 cursor-not-allowed"
-            )}
-            aria-label={isRecording ? "Stop recording" : "Start voice recording"}
-            title={
-              isRecording 
-                ? "Click to stop recording and transcribe with Whisper AI" 
-                : "Click to start voice recording (uses Whisper AI)"
-            }
-          >
-            {isRecording ? (
-              <MicOff className="w-5 h-5" />
-            ) : (
-              <Mic className="w-5 h-5" />
-            )}
-          </button>
+          {isClient && (
+            <button
+              onClick={toggleRecording}
+              disabled={disabled || isLoading || !speechSupported}
+              className={cn(
+                "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                isRecording
+                  ? "bg-error/20 border border-error/40 text-error animate-pulse hover:bg-error/30"
+                  : speechSupported
+                    ? "bg-on-dark/10 hover:bg-on-dark/20 text-on-dark"
+                    : "bg-on-dark/5 text-on-dark/30 cursor-not-allowed"
+              )}
+              aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+              title={
+                isRecording 
+                  ? "Click to stop recording and transcribe with Whisper AI" 
+                  : speechSupported
+                    ? "Click to start voice recording (uses Whisper AI)"
+                    : "Voice recording not supported in this browser"
+              }
+            >
+              {isRecording ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </button>
+          )}
 
           {/* Submit/Stop Button - Desktop */}
           <button
@@ -302,8 +312,8 @@ export default function PromptInput({
                 ? "AI is processing..." 
                 : isRecording
                   ? "Recording... Click microphone to stop and transcribe"
-                  : !speechSupported
-                    ? "Press Enter to send, Shift+Enter for new line (voice recording not supported)"
+                  : !isClient || !speechSupported
+                    ? "Press Enter to send, Shift+Enter for new line"
                     : "Press Enter to send, Shift+Enter for new line, or record voice input"
             }
           </span>
@@ -315,31 +325,35 @@ export default function PromptInput({
         <div className="flex items-center gap-3 bg-on-dark/10 rounded-full p-2">
 
           {/* Microphone Button */}
-          <button
-            onClick={toggleRecording}
-            disabled={disabled || isLoading}
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              isRecording
-                ? "bg-error/20 text-error animate-pulse hover:bg-error/30"
-                : speechSupported
-                  ? "hover:bg-on-dark/20 text-on-dark"
-                  : "text-on-dark/30 cursor-not-allowed"
-            )}
-            aria-label={isRecording ? "Stop recording" : "Start voice recording"}
-            title={
-              isRecording 
-                ? "Click to stop recording and transcribe with Whisper AI" 
-                : "Click to start voice recording (uses Whisper AI)"
-            }
-          >
-            {isRecording ? (
-              <MicOff className="w-5 h-5" />
-            ) : (
-              <Mic className="w-5 h-5" />
-            )}
-          </button>
+          {isClient && (
+            <button
+              onClick={toggleRecording}
+              disabled={disabled || isLoading || !speechSupported}
+              className={cn(
+                "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                isRecording
+                  ? "bg-error/20 text-error animate-pulse hover:bg-error/30"
+                  : speechSupported
+                    ? "hover:bg-on-dark/20 text-on-dark"
+                    : "text-on-dark/30 cursor-not-allowed"
+              )}
+              aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+              title={
+                isRecording 
+                  ? "Click to stop recording and transcribe with Whisper AI" 
+                  : speechSupported
+                    ? "Click to start voice recording (uses Whisper AI)"
+                    : "Voice recording not supported in this browser"
+              }
+            >
+              {isRecording ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </button>
+          )}
 
           {/* Input Field */}
           <div className="flex-1">
