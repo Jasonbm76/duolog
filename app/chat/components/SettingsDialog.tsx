@@ -16,9 +16,19 @@ interface SettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onKeysUpdated?: (keys: APIKeys) => void;
+  selectedTone?: string;
+  onToneChange?: (tone: string) => void;
+  toneOptions?: Array<{ value: string; label: string; description: string }>;
 }
 
-export default function SettingsDialog({ isOpen, onClose, onKeysUpdated }: SettingsDialogProps) {
+export default function SettingsDialog({ 
+  isOpen, 
+  onClose, 
+  onKeysUpdated, 
+  selectedTone = 'conversational',
+  onToneChange,
+  toneOptions = []
+}: SettingsDialogProps) {
   const [keys, setKeys] = useState<APIKeys>({ openai: '', anthropic: '' });
   const [savedKeys, setSavedKeys] = useState<APIKeys>({ openai: '', anthropic: '' });
   const [validating, setValidating] = useState(false);
@@ -160,6 +170,31 @@ export default function SettingsDialog({ isOpen, onClose, onKeysUpdated }: Setti
               <li>• Support development costs</li>
             </ul>
           </div>
+
+          {/* Tone Preference */}
+          {toneOptions.length > 0 && onToneChange && (
+            <div className="bg-on-dark/5 border border-on-dark/10 rounded-lg p-4">
+              <h3 className="font-medium text-on-dark mb-3 flex items-center gap-2">
+                🎭 AI Response Tone
+              </h3>
+              <div className="space-y-3">
+                <select
+                  value={selectedTone}
+                  onChange={(e) => onToneChange(e.target.value)}
+                  className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-lg text-on-dark focus:border-primary focus:outline-none"
+                >
+                  {toneOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-on-dark-muted">
+                  {toneOptions.find(opt => opt.value === selectedTone)?.description || 'Select how the AIs should respond to your prompts'}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* OpenAI Key */}
           <div className="space-y-2">

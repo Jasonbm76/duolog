@@ -14,6 +14,7 @@ interface StartConversationOptions {
   sessionId: string;
   email?: string;
   fingerprint?: string;
+  tone?: string;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -28,6 +29,7 @@ interface ContinueConversationOptions {
   sessionId: string;
   email?: string;
   fingerprint?: string;
+  tone?: string;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -53,6 +55,7 @@ class RealConversationService {
       sessionId,
       email,
       fingerprint,
+      tone,
       onRoundStart,
       onContentChunk,
       onRoundComplete,
@@ -80,6 +83,7 @@ class RealConversationService {
           sessionId,
           email,
           fingerprint,
+          tone,
         }),
         signal: this.abortController.signal,
       });

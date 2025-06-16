@@ -299,12 +299,6 @@ export default function MessageBubble({ message, isStreaming = false, colorOverr
             {config.name}
           </span>
           <span className="text-xs text-on-dark-muted">
-            Round {message.round}
-          </span>
-          <span className="text-xs text-on-dark-muted">
-            •
-          </span>
-          <span className="text-xs text-on-dark-muted">
             {formatTimestamp(message.timestamp)}
           </span>
         </div>

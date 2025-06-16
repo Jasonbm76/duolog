@@ -69,6 +69,21 @@ export default function ChatContainer() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error'>('connected');
   const [lastConnectionCheck, setLastConnectionCheck] = useState<Date | null>(null);
   const [isClient, setIsClient] = useState(false);
+  
+  // Tone preferences
+  const [selectedTone, setSelectedTone] = useState<string>('conversational');
+  
+  const toneOptions = [
+    { value: 'professional', label: '🎯 Professional', description: 'Business-focused, formal language' },
+    { value: 'conversational', label: '💬 Conversational', description: 'Friendly, casual, approachable' },
+    { value: 'creative', label: '🎨 Creative', description: 'Imaginative, expressive, inspiring' },
+    { value: 'technical', label: '🔬 Technical', description: 'Detailed, precise, analytical' },
+    { value: 'concise', label: '⚡ Concise', description: 'Brief, to-the-point responses' },
+    { value: 'educational', label: '🎓 Educational', description: 'Teaching-focused, step-by-step' },
+    { value: 'enthusiastic', label: '🚀 Enthusiastic', description: 'Energetic, motivational' },
+    { value: 'sarcastic', label: '😏 Sarcastic', description: 'Witty, clever, with a touch of humor' },
+    { value: 'roast', label: '🔥 Roast Me', description: 'Playfully savage, comedy roast style' }
+  ];
 
   // Email validation helper
   const isValidEmail = (email: string): boolean => {
@@ -129,7 +144,19 @@ export default function ChatContainer() {
   useEffect(() => {
     const shuffled = [...examplePrompts].sort(() => 0.5 - Math.random());
     setSelectedExamples(shuffled.slice(0, 5));
+    
+    // Load saved tone preference
+    const savedTone = localStorage.getItem('duolog-tone-preference');
+    if (savedTone && toneOptions.find(t => t.value === savedTone)) {
+      setSelectedTone(savedTone);
+    }
   }, []);
+  
+  // Save tone preference when changed
+  const handleToneChange = (tone: string) => {
+    setSelectedTone(tone);
+    localStorage.setItem('duolog-tone-preference', tone);
+  };
 
   // Stable message ID generation to avoid hydration issues
   const generateMessageId = (model: string, round: number) => {
@@ -160,6 +187,37 @@ export default function ChatContainer() {
     }
     
     lastScrollTop.current = scrollTop;
+  }, []);
+
+  // Handle wheel events (mouse wheel) to detect user scroll intent
+  const handleWheel = useCallback((e: WheelEvent) => {
+    // If user scrolls up with wheel, disable auto-scroll
+    if (e.deltaY < 0) {
+      setUserHasScrolled(true);
+    }
+  }, []);
+
+  // Handle touch events to detect user swipe/scroll intent
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Store initial touch position
+    const touch = e.touches[0];
+    if (touch && scrollContainerRef.current) {
+      scrollContainerRef.current.dataset.touchStartY = touch.clientY.toString();
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    // Detect upward swipe
+    const touch = e.touches[0];
+    if (touch && scrollContainerRef.current?.dataset.touchStartY) {
+      const startY = parseFloat(scrollContainerRef.current.dataset.touchStartY);
+      const deltaY = touch.clientY - startY;
+      
+      // If user swipes up (negative deltaY), disable auto-scroll
+      if (deltaY > 20) { // Threshold to avoid accidental triggers
+        setUserHasScrolled(true);
+      }
+    }
   }, []);
 
   // Enhanced auto-scroll with smooth streaming behavior
@@ -284,12 +342,27 @@ export default function ChatContainer() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Add scroll detection event listeners
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('wheel', handleWheel, { passive: true });
+      scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+      scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: true });
+    }
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      
+      // Remove scroll detection event listeners
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('wheel', handleWheel);
+        scrollContainer.removeEventListener('touchstart', handleTouchStart);
+        scrollContainer.removeEventListener('touchmove', handleTouchMove);
+      }
     };
-  }, [isClient]);
+  }, [isClient, handleWheel, handleTouchStart, handleTouchMove]);
 
   // Update connection status during active conversations
   useEffect(() => {
@@ -544,6 +617,7 @@ export default function ChatContainer() {
         email: emailToUse,
         fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
+        tone: selectedTone,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
           if (processingRef.current === false) {
@@ -801,6 +875,7 @@ export default function ChatContainer() {
         email: userEmail,
         fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
+        tone: selectedTone,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
           if (processingRef.current === false) {
@@ -1454,25 +1529,20 @@ export default function ChatContainer() {
                           })()}
                         </div>
 
-                        {/* Status Text */}
+                        {/* Status Text - Just show completion status */}
                         <div className="text-sm">
-                          {isConversationComplete ? (
+                          {isConversationComplete && (
                             <span className="text-success font-medium">
                               Complete!
                             </span>
-                          ) : state.conversation && (
-                            <span className="text-on-dark">
-                              Round {state.conversation.currentRound} of ?
-                            </span>
                           )}
                         </div>
-
-
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         </div>
@@ -1487,6 +1557,9 @@ export default function ChatContainer() {
               disabled={state.error ? true : (isConversationComplete ? !canContinue : !canStartNew)}
               isLoading={state.isLoading || processingRef.current}
               placeholder={state.error?.includes('limit reached') ? "Demo complete - Thank you for trying DuoLog!" : (isConversationComplete ? "Ask a follow-up question..." : "Enter your prompt...")}
+              selectedTone={selectedTone}
+              onToneChange={handleToneChange}
+              toneOptions={toneOptions}
             />
             
             {/* Usage status and controls */}
@@ -1536,6 +1609,9 @@ export default function ChatContainer() {
             });
           }
         }}
+        selectedTone={selectedTone}
+        onToneChange={handleToneChange}
+        toneOptions={toneOptions}
       />
 
       {/* Email Capture Modal */}

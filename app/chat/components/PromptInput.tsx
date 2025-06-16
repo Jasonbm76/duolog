@@ -21,6 +21,9 @@ interface PromptInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  selectedTone?: string;
+  onToneChange?: (tone: string) => void;
+  toneOptions?: Array<{ value: string; label: string; description: string }>;
 }
 
 export default function PromptInput({ 
@@ -29,7 +32,10 @@ export default function PromptInput({
   isLoading = false, 
   placeholder = "Enter your prompt...",
   disabled = false,
-  className 
+  className,
+  selectedTone = 'conversational',
+  onToneChange,
+  toneOptions = []
 }: PromptInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -243,33 +249,42 @@ export default function PromptInput({
 
           {/* Microphone Button - Desktop */}
           {isClient && (
-            <button
-              onClick={toggleRecording}
-              disabled={disabled || isLoading || !speechSupported}
-              className={cn(
-                "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                isRecording
-                  ? "bg-error/20 border border-error/40 text-error animate-pulse hover:bg-error/30"
-                  : speechSupported
-                    ? "bg-on-dark/10 hover:bg-on-dark/20 text-on-dark"
-                    : "bg-on-dark/5 text-on-dark/30 cursor-not-allowed"
-              )}
-              aria-label={isRecording ? "Stop recording" : "Start voice recording"}
-              title={
-                isRecording 
-                  ? "Click to stop recording and transcribe with Whisper AI" 
-                  : speechSupported
-                    ? "Click to start voice recording (uses Whisper AI)"
-                    : "Voice recording not supported in this browser"
-              }
-            >
-              {isRecording ? (
-                <MicOff className="w-5 h-5" />
-              ) : (
-                <Mic className="w-5 h-5" />
-              )}
-            </button>
+            <div className="relative">
+              <button
+                onClick={toggleRecording}
+                disabled={disabled || isLoading || !speechSupported}
+                className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 relative",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  isRecording
+                    ? "bg-error/20 border border-error/40 text-error animate-pulse hover:bg-error/30"
+                    : speechSupported
+                      ? "bg-on-dark/10 hover:bg-on-dark/20 text-on-dark"
+                      : "bg-on-dark/5 text-on-dark/30 cursor-not-allowed"
+                )}
+                aria-label={isRecording ? "Stop AI voice recording" : "Start AI voice recording"}
+                title={
+                  isRecording 
+                    ? "AI is cleaning up your speech - click to stop and process" 
+                    : speechSupported
+                      ? "AI-powered voice input - your speech will be cleaned up and refined automatically"
+                      : "Voice recording not supported in this browser"
+                }
+              >
+                {isRecording ? (
+                  <MicOff className="w-5 h-5" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
+                
+                {/* AI Badge */}
+                {speechSupported && (
+                  <div className="absolute -top-3 -right-3 bg-success font-bold text-on-dark text-xs font-bold px-1 py-0.5 rounded leading-none">
+                    AI
+                  </div>
+                )}
+              </button>
+            </div>
           )}
 
           {/* Submit/Stop Button - Desktop */}
@@ -303,7 +318,7 @@ export default function PromptInput({
           </button>
         </div>
 
-        {/* Helper Text - Desktop only */}
+        {/* Helper Text & Tone Selector - Desktop only */}
         <div className="flex justify-between items-center mt-2 text-xs font-semibold text-on-dark/50 text-shadow-sm">
           <span>
             {disabled 
@@ -317,6 +332,25 @@ export default function PromptInput({
                     : "Press Enter to send, Shift+Enter for new line, or record voice input"
             }
           </span>
+          
+          {/* Tone Selector - Desktop only */}
+          {toneOptions.length > 0 && onToneChange && (
+            <div className="flex items-center gap-2 mr-[120px]">
+              <span className="text-on-dark/40 text-xs">Tone:</span>
+              <select
+                value={selectedTone}
+                onChange={(e) => onToneChange(e.target.value)}
+                className="bg-on-dark/10 border border-on-dark/20 rounded-md px-2 py-1 text-xs text-on-dark focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                disabled={disabled || isLoading}
+              >
+                {toneOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -326,33 +360,42 @@ export default function PromptInput({
 
           {/* Microphone Button */}
           {isClient && (
-            <button
-              onClick={toggleRecording}
-              disabled={disabled || isLoading || !speechSupported}
-              className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                isRecording
-                  ? "bg-error/20 text-error animate-pulse hover:bg-error/30"
-                  : speechSupported
-                    ? "hover:bg-on-dark/20 text-on-dark"
-                    : "text-on-dark/30 cursor-not-allowed"
-              )}
-              aria-label={isRecording ? "Stop recording" : "Start voice recording"}
-              title={
-                isRecording 
-                  ? "Click to stop recording and transcribe with Whisper AI" 
-                  : speechSupported
-                    ? "Click to start voice recording (uses Whisper AI)"
-                    : "Voice recording not supported in this browser"
-              }
-            >
-              {isRecording ? (
-                <MicOff className="w-5 h-5" />
-              ) : (
-                <Mic className="w-5 h-5" />
-              )}
-            </button>
+            <div className="relative">
+              <button
+                onClick={toggleRecording}
+                disabled={disabled || isLoading || !speechSupported}
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 relative",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  isRecording
+                    ? "bg-error/20 text-error animate-pulse hover:bg-error/30"
+                    : speechSupported
+                      ? "hover:bg-on-dark/20 text-on-dark"
+                      : "text-on-dark/30 cursor-not-allowed"
+                )}
+                aria-label={isRecording ? "Stop AI voice recording" : "Start AI voice recording"}
+                title={
+                  isRecording 
+                    ? "AI is cleaning up your speech - tap to stop and process" 
+                    : speechSupported
+                      ? "AI-powered voice input - your speech will be cleaned up and refined automatically"
+                      : "Voice recording not supported in this browser"
+                }
+              >
+                {isRecording ? (
+                  <MicOff className="w-5 h-5" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
+                
+                {/* AI Badge */}
+                {speechSupported && (
+                  <div className="absolute -top-1 -right-1 bg-success text-white text-xs font-bold px-1 py-0.5 rounded-sm leading-none">
+                    AI
+                  </div>
+                )}
+              </button>
+            </div>
           )}
 
           {/* Input Field */}

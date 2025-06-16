@@ -8,6 +8,39 @@ import { validateEmail, validateText, validateSessionId } from '@/lib/utils/inpu
 
 export const runtime = 'edge';
 
+// Helper function to fix GPT-4 numbering format
+function fixGptNumbering(content: string): string {
+  // Fix the pattern where numbers are on separate lines
+  // Pattern: "1.\n" followed by content becomes "1. " on same line
+  return content.replace(/(\d+)\.\s*\n\s*/g, '$1. ');
+}
+
+// Simple chunk fix for obvious patterns
+function fixChunkNumbering(chunk: string): string {
+  // Fix obvious patterns: if chunk is just a number with period and newline
+  if (/^\d+\.\s*\n$/.test(chunk)) {
+    return chunk.replace(/\n$/, ' ');
+  }
+  return chunk;
+}
+
+// Helper function to generate tone instructions
+function getToneInstructions(tone: string = 'conversational'): string {
+  const toneInstructions = {
+    professional: "Respond in a professional, business-focused manner with formal language and structured presentation.",
+    conversational: "Respond in a friendly, casual, and approachable manner as if having a natural conversation.",
+    creative: "Respond with imagination, expressiveness, and inspiration. Be original and think outside the box.",
+    technical: "Respond with detailed, precise, and analytical information. Focus on accuracy and technical depth.",
+    concise: "Respond briefly and to-the-point. Be clear and direct without unnecessary elaboration.",
+    educational: "Respond in a teaching-focused manner with step-by-step explanations and helpful guidance.",
+    enthusiastic: "Respond with energy, motivation, and excitement. Be positive and encouraging.",
+    sarcastic: "Respond with wit, clever humor, and a touch of sarcasm. Be entertaining while remaining helpful.",
+    roast: "Roast the user playfully and creatively. Be brutally honest, hilariously savage, but never actually mean or hurtful. Think comedy roast style - entertaining burns that make people laugh at themselves."
+  };
+  
+  return toneInstructions[tone as keyof typeof toneInstructions] || toneInstructions.conversational;
+}
+
 interface CollaborateRequest {
   prompt: string;
   userKeys?: {
@@ -17,12 +50,13 @@ interface CollaborateRequest {
   sessionId: string;
   email: string; // Now required
   fingerprint?: string;
+  tone?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: CollaborateRequest = await request.json();
-    const { prompt, userKeys, sessionId, email, fingerprint } = body;
+    const { prompt, userKeys, sessionId, email, fingerprint, tone } = body;
 
     // Validate and sanitize prompt
     const promptValidation = validateText(prompt, {
@@ -173,18 +207,23 @@ export async function POST(request: NextRequest) {
             throw new Error('No OpenAI API key available');
           }
           
+          const toneInstruction = getToneInstructions(tone);
+          
           gptResult1 = await openai.streamCompletion({
-            prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. A user has asked: "${promptValidation.sanitized}"
+            prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. ${toneInstruction}
+
+A user has asked: "${promptValidation.sanitized}"
 
 Provide a thorough, helpful response. After you respond, Claude will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.`,
             apiKey: userKeys?.openai,
             onChunk: (chunk) => {
               try {
+                const fixedChunk = fixChunkNumbering(chunk);
                 writer.write({
                   type: 'content_chunk',
                   round: currentRound,
                   model: 'gpt-4',
-                  content: chunk,
+                  content: fixedChunk,
                 });
               } catch (error) {
                 // Stream might be closed, ignore write errors
@@ -193,8 +232,9 @@ Provide a thorough, helpful response. After you respond, Claude will review your
             },
           });
 
-          // Add to conversation history
-          conversationHistory.push({ role: 'gpt-4', content: gptResult1.content });
+          // Fix formatting and add to conversation history
+          const fixedContent = fixGptNumbering(gptResult1.content);
+          conversationHistory.push({ role: 'gpt-4', content: fixedContent });
           lastSpeaker = 'gpt-4';
 
           // Send token update for GPT-4 round 1
@@ -239,8 +279,12 @@ Provide a thorough, helpful response. After you respond, Claude will review your
           });
           
           // Fallback to Claude for initial response
+          const toneInstruction = getToneInstructions(tone);
+          
           const claudeResult1 = await anthropic.streamCompletion({
-            prompt: `You are Claude providing the initial response to a user question. A user has asked: "${promptValidation.sanitized}"
+            prompt: `You are Claude providing the initial response to a user question. ${toneInstruction}
+
+A user has asked: "${promptValidation.sanitized}"
 
 Provide a thorough, helpful response. Focus on being comprehensive and addressing all aspects of their question.`,
             apiKey: userKeys?.anthropic,
@@ -302,8 +346,10 @@ Provide a thorough, helpful response. Focus on being comprehensive and addressin
                 `${msg.role === 'claude' ? 'Claude' : 'GPT-4'}: ${msg.content}`
               ).join('\n\n');
 
+              const toneInstruction = getToneInstructions(tone);
+              
               result = await openai.streamCompletion({
-                prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer to this user question: "${promptValidation.sanitized}"
+                prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer to this user question: "${promptValidation.sanitized}" ${toneInstruction}
 
 Conversation so far:
 ${conversationContext}
@@ -316,11 +362,12 @@ Be honest about whether the current answer is sufficient or needs enhancement.`,
                 apiKey: userKeys?.openai,
                 onChunk: (chunk) => {
                   try {
+                    const fixedChunk = fixChunkNumbering(chunk);
                     writer.write({
                       type: 'content_chunk',
                       round: currentRound,
                       model: 'gpt-4',
-                      content: chunk,
+                      content: fixedChunk,
                     });
                   } catch (error) {
                     // Stream might be closed, ignore write errors
@@ -351,8 +398,10 @@ Be honest about whether the current answer is sufficient or needs enhancement.`,
               `${msg.role === 'claude' ? 'Claude' : 'GPT-4'}: ${msg.content}`
             ).join('\n\n');
 
+            const toneInstruction = getToneInstructions(tone);
+            
             result = await anthropic.streamCompletion({
-              prompt: `You are Claude, collaborating with GPT-4 to provide the best possible answer to this user question: "${promptValidation.sanitized}"
+              prompt: `You are Claude, collaborating with GPT-4 to provide the best possible answer to this user question: "${promptValidation.sanitized}" ${toneInstruction}
 
 Conversation so far:
 ${conversationContext}
@@ -391,8 +440,9 @@ Be honest about whether the current combined answer is sufficient or needs more 
             }
           }
 
-          // Add to conversation history
-          conversationHistory.push({ role: nextSpeaker, content: result.content });
+          // Fix formatting if GPT-4 and add to conversation history
+          const finalContent = nextSpeaker === 'gpt-4' ? fixGptNumbering(result.content) : result.content;
+          conversationHistory.push({ role: nextSpeaker, content: finalContent });
           lastSpeaker = nextSpeaker;
 
           // Check for agreement
@@ -425,8 +475,10 @@ Be honest about whether the current combined answer is sufficient or needs more 
 
           let finalSynthesis;
           try {
+            const toneInstruction = getToneInstructions(tone);
+            
             finalSynthesis = await anthropic.streamCompletion({
-              prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
+              prompt: `You are Claude creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}" ${toneInstruction}
 
 Here's the complete discussion:
 ${conversationContext}
@@ -459,8 +511,10 @@ Do not mention the collaboration process or that this is a synthesis. Just provi
             console.warn('Anthropic overloaded for final synthesis, falling back to GPT-4:', anthropicError);
             
             // Fallback to GPT-4 for final synthesis
+            const toneInstruction = getToneInstructions(tone);
+            
             finalSynthesis = await openai.streamCompletion({
-              prompt: `You are GPT-4 creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}"
+              prompt: `You are GPT-4 creating a final, polished synthesis of the collaborative discussion. The user asked: "${promptValidation.sanitized}" ${toneInstruction}
 
 Here's the complete discussion:
 ${conversationContext}
@@ -471,16 +525,18 @@ Create a concise, well-structured final answer that:
 3. Removes any redundancy or back-and-forth discussion
 4. Focuses on giving the user exactly what they need
 5. Uses appropriate formatting (bullet points, numbered lists, etc.) for clarity
+6. Make sure that when you use numbered lists, you use the correct format where the text is on the same line as the number.
 
 Do not mention the collaboration process or that this is a synthesis. Just provide the clean, final answer.`,
               apiKey: userKeys?.openai,
               onChunk: (chunk) => {
                 try {
+                  const fixedChunk = fixChunkNumbering(chunk);
                   writer.write({
                     type: 'content_chunk',
                     round: currentRound,
                     model: 'gpt-4',
-                    content: chunk,
+                    content: fixedChunk,
                     isFinalSynthesis: true,
                   });
                 } catch (error) {

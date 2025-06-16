@@ -1,7 +1,7 @@
 "use client";
 
 import { Conversation } from '@/lib/types/chat';
-import { ArrowLeft, RotateCcw, Copy, CheckCircle } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -25,7 +25,6 @@ export default function ConversationHeader({
     );
   }
 
-  const roundSteps = [1, 2, 3];
   const isComplete = conversation.status === 'completed';
 
   return (
@@ -57,67 +56,17 @@ export default function ConversationHeader({
         </div>
       </div>
 
-      {/* Round Progress */}
-      <div className="flex items-center gap-4">
-        <span className="text-sm font-medium text-on-dark">Progress:</span>
-        <div className="flex items-center gap-2">
-          {roundSteps.map((round, index) => (
-            <div key={round} className="flex items-center">
-              {/* Round Step */}
-              <div className={cn(
-                'flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium border-2 transition-colors',
-                conversation.currentRound > round || isComplete
-                  ? 'bg-primary border-primary text-white'
-                  : conversation.currentRound === round
-                    ? 'border-primary text-primary bg-primary/10'
-                    : 'border-on-dark/30 text-on-dark bg-transparent'
-              )}>
-                {conversation.currentRound > round || isComplete ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  round
-                )}
-              </div>
-
-              {/* Connector Line */}
-              {index < roundSteps.length - 1 && (
-                <div className={cn(
-                  'w-8 h-0.5 mx-1 transition-colors',
-                  conversation.currentRound > round || isComplete
-                    ? 'bg-primary'
-                    : 'bg-on-dark/30'
-                )} />
-              )}
-            </div>
-          ))}
+      {/* Simple Status */}
+      {isComplete && (
+        <div className="mt-3 text-sm">
+          <span className="text-success font-medium">
+            ✅ Collaboration Complete!
+          </span>
+          <p className="text-on-dark mt-1">
+            Your prompt has been refined through collaborative AI analysis.
+          </p>
         </div>
-
-        {/* Status Text */}
-        <div className="ml-4 text-sm">
-          {isComplete ? (
-            <span className="text-success font-medium">
-              Collaboration Complete!
-            </span>
-          ) : (
-            <span className="text-on-dark">
-              Round {conversation.currentRound} of {conversation.totalRounds}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Round Description */}
-      <div className="mt-3 text-sm text-on-dark">
-        {isComplete ? (
-          "Your prompt has been refined through collaborative AI analysis."
-        ) : conversation.currentRound === 1 ? (
-          "Claude and GPT-4 will analyze your prompt and suggest improvements."
-        ) : conversation.currentRound === 2 ? (
-          "The AIs are building on their previous analysis to refine further."
-        ) : (
-          "Final round of collaborative refinement in progress."
-        )}
-      </div>
+      )}
     </div>
   );
 }
