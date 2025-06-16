@@ -212,17 +212,23 @@ export class InputValidator {
       }
 
       // Check for potential SQL injection patterns (defense in depth)
+      // Note: Be careful not to block normal user text like contractions and quotes
       const sqlInjectionPatterns = [
-        /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
-        /(--|\/\*|\*\/|;|'|"|`)/g,
+        /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\s+)/gi,
+        /(;\s*(DROP|DELETE|INSERT|UPDATE|CREATE))/gi,
+        /(\bunion\s+select)/gi,
+        /(--\s*[^\r\n]*)/g, // SQL comments but not double hyphens in normal text
         /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi
       ];
 
+      // Only flag as SQL injection if we find actual SQL patterns, not just quotes/apostrophes
       const hasSqlInjection = sqlInjectionPatterns.some(pattern => pattern.test(sanitized));
       if (hasSqlInjection) {
         errors.push('Text contains invalid characters');
-        // Basic cleanup - remove dangerous SQL characters
-        sanitized = sanitized.replace(/['"`;\-]/g, '').replace(/--/g, '');
+        // Basic cleanup - remove dangerous SQL patterns but preserve normal quotes
+        sanitized = sanitized.replace(/(;\s*(DROP|DELETE|INSERT|UPDATE|CREATE))/gi, '')
+                            .replace(/(\bunion\s+select)/gi, '')
+                            .replace(/(--\s*[^\r\n]*)/g, '');
       }
 
       return {
