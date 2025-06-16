@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "supabase start && next dev -p 5001",
-    "build": "next build",
+    "build": "NODE_NO_WARNINGS=1 next build",
     "start": "supabase start && next start -p 5001",
     "lint": "next lint",
     "prepare": "husky install",
