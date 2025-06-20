@@ -12,9 +12,10 @@ import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-// Utility function to format timestamps relative to now
-const formatTimestamp = (timestamp: Date): string => {
-  const now = new Date();
+// Utility function to format timestamps relative to a given time
+const formatTimestamp = (timestamp: Date, currentTime?: Date): string => {
+  // Use provided time or fallback to timestamp for server rendering
+  const now = currentTime || timestamp;
   const diffInMs = now.getTime() - timestamp.getTime();
   const diffInSeconds = Math.floor(diffInMs / 1000);
   const diffInMinutes = Math.floor(diffInSeconds / 60);
@@ -100,6 +101,7 @@ export default function FinalSynthesis({ message }: FinalSynthesisProps) {
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -309,6 +311,16 @@ ${message.content}
     }
   };
 
+  // Set current time after mount to avoid hydration mismatch
+  useEffect(() => {
+    setCurrentTime(new Date());
+    // Update time every minute for relative timestamps
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -340,7 +352,7 @@ ${message.content}
               <div className="flex items-center gap-2">
                 <p className="text-xs lg:text-sm text-on-dark-muted">Synthesized from Claude & GPT-4's collaboration</p>
                 <span className="text-xs text-on-dark-muted">•</span>
-                <span className="text-xs text-on-dark-muted">{formatTimestamp(message.timestamp)}</span>
+                <span className="text-xs text-on-dark-muted">{formatTimestamp(message.timestamp, currentTime || undefined)}</span>
               </div>
             </div>
           </div>
@@ -397,7 +409,7 @@ ${message.content}
                   <button
                     onClick={exportToPDF}
                     disabled={isExporting}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-primary/10 transition-colors disabled:opacity-50 text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 transition-colors disabled:opacity-50 text-left"
                   >
                     <FileText className="w-4 h-4 flex-shrink-0" />
                     <span>Export as PDF</span>
@@ -405,7 +417,7 @@ ${message.content}
                   <button
                     onClick={exportToMarkdown}
                     disabled={isExporting}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-primary/10 transition-colors disabled:opacity-50 text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 transition-colors disabled:opacity-50 text-left"
                   >
                     <Download className="w-4 h-4 flex-shrink-0" />
                     <span>Export as Markdown</span>
@@ -473,7 +485,7 @@ ${message.content}
                   href={href} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-300 hover:text-blue-200 underline underline-offset-2 transition-colors"
+                  className="text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
                 >
                   {children}
                 </a>

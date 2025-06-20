@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { Message } from '@/lib/types/chat';
 import { User, Quote, Brain, Copy, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,9 +12,10 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-// Utility function to format timestamps relative to now
-const formatTimestamp = (timestamp: Date): string => {
-  const now = new Date();
+// Utility function to format timestamps relative to a given time
+const formatTimestamp = (timestamp: Date, currentTime?: Date): string => {
+  // Use provided time or fallback to timestamp for server rendering
+  const now = currentTime || timestamp;
   const diffInMs = now.getTime() - timestamp.getTime();
   const diffInSeconds = Math.floor(diffInMs / 1000);
   const diffInMinutes = Math.floor(diffInSeconds / 60);
@@ -176,7 +178,7 @@ const markdownComponents = {
       href={href} 
       target="_blank" 
       rel="noopener noreferrer"
-      className="text-blue-300 hover:text-blue-200 underline underline-offset-2 transition-colors"
+      className="text-primary-300 hover:text-primary-200 underline underline-offset-2 transition-colors"
     >
       {children}
     </a>
@@ -231,6 +233,12 @@ const markdownComponents = {
 
 export default function MessageBubble({ message, isStreaming = false, colorOverride }: MessageBubbleProps) {
   const config = roleConfig[message.role];
+  const [currentTime, setCurrentTime] = useState<Date | undefined>(undefined);
+
+  useEffect(() => {
+    // Set current time on client side to avoid hydration mismatch
+    setCurrentTime(new Date());
+  }, []);
 
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -299,7 +307,7 @@ export default function MessageBubble({ message, isStreaming = false, colorOverr
             {config.name}
           </span>
           <span className="text-xs text-on-dark-muted">
-            {formatTimestamp(message.timestamp)}
+            {formatTimestamp(message.timestamp, currentTime)}
           </span>
         </div>
 

@@ -144,10 +144,10 @@ export default function AnalyticsPage() {
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="bg-white shadow-sm animate-pulse">
               <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-secondary-200 rounded w-3/4"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-8 bg-secondary-200 rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))}
@@ -202,12 +202,12 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{data.totalUsers}</div>
-            <p className="text-xs text-gray-500">
+            <div className="text-2xl font-bold text-foreground">{data.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
               {data.totalVerifiedUsers} verified, {data.totalUnverifiedUsers} pending
             </p>
           </CardContent>
@@ -216,11 +216,11 @@ export default function AnalyticsPage() {
         <Card className="bg-white shadow-sm text-on-light">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-on-light-muted">Total Conversations</CardTitle>
-            <MessageSquare className="h-4 w-4 text-gray-400" />
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{data.totalConversations}</div>
-            <p className="text-xs text-gray-500">
+            <div className="text-2xl font-bold text-foreground">{data.totalConversations}</div>
+            <p className="text-xs text-muted-foreground">
               {data.avgConversationsPerUser.toFixed(1)} avg per user
             </p>
           </CardContent>
@@ -228,14 +228,14 @@ export default function AnalyticsPage() {
 
         <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Email Verification</CardTitle>
-            <Mail className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Email Verification</CardTitle>
+            <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-foreground">
               {((data.totalVerifiedUsers / data.totalUsers) * 100).toFixed(0)}%
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {data.totalVerifiedUsers} of {data.totalUsers} verified
             </p>
           </CardContent>
@@ -243,12 +243,12 @@ export default function AnalyticsPage() {
 
         <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">At Usage Limit</CardTitle>
-            <TrendingUp className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">At Usage Limit</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{data.usersAtLimit}</div>
-            <p className="text-xs text-gray-500">
+            <div className="text-2xl font-bold text-foreground">{data.usersAtLimit}</div>
+            <p className="text-xs text-muted-foreground">
               {data.suspiciousUsers > 0 && (
                 <span className="text-warning">{data.suspiciousUsers} suspicious</span>
               )}
@@ -273,15 +273,15 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           {data.recentSignups.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No recent signups</p>
+            <p className="text-muted-foreground text-center py-8">No recent signups</p>
           ) : (
             <div className="space-y-4">
               {data.recentSignups.map((user, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="font-medium text-gray-900">{user.displayEmail || user.email}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-foreground">{user.displayEmail || user.email}</p>
+                      <p className="text-sm text-muted-foreground">
                         Signed up {formatDate(user.created_at)}
                         {user.last_conversation_at && (
                           <span> • Last active {formatDate(user.last_conversation_at)}</span>
@@ -295,7 +295,7 @@ export default function AnalyticsPage() {
                   <div className="flex items-center gap-2">
                     {getVerificationBadge(user.email_verified)}
                     {getUsageBadge(user.current_usage ?? user.conversations_used, user.max_conversations)}
-                    <Badge variant="outline" className="text-gray-600">
+                    <Badge variant="outline" className="text-muted-foreground">
                       {user.current_usage ?? user.conversations_used}/{user.max_conversations}
                     </Badge>
                     <Button
@@ -333,7 +333,7 @@ export default function AnalyticsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Review users with multiple emails from same fingerprint or IP address.
               This could indicate attempts to bypass usage limits.
             </p>

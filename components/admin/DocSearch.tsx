@@ -55,7 +55,7 @@ export default function DocSearch() {
   return (
     <div className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
           type="search"
           placeholder="Search documentation..."
@@ -67,22 +67,22 @@ export default function DocSearch() {
 
       {/* Search Results Dropdown */}
       {isOpen && results.length > 0 && (
-        <Card className="absolute top-full mt-2 w-full z-50 bg-white shadow-lg border border-gray-200 max-h-96 overflow-auto">
+        <Card className="absolute top-full mt-2 w-full z-50 bg-white shadow-lg border border-border max-h-96 overflow-auto">
           <CardContent className="p-2">
             {results.map((result) => (
               <button
                 key={result.slug}
                 onClick={() => handleResultClick(result.slug)}
-                className="w-full text-left p-3 rounded-md hover:bg-gray-100 transition-colors"
+                className="w-full text-left p-3 rounded-md hover:bg-muted transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-sm text-gray-900">{result.title}</h4>
-                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    <h4 className="font-semibold text-sm text-foreground">{result.title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {result.excerpt}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded ml-2 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded ml-2 flex-shrink-0">
                     {result.category}
                   </span>
                 </div>
@@ -98,8 +98,8 @@ export default function DocSearch() {
       {/* Loading State */}
       {isLoading && (
         <div className="absolute top-full mt-2 w-full">
-          <Card className="bg-white shadow-lg border border-gray-200">
-            <CardContent className="p-4 text-center text-gray-600">
+          <Card className="bg-white shadow-lg border border-border">
+            <CardContent className="p-4 text-center text-muted-foreground">
               Searching...
             </CardContent>
           </Card>
@@ -109,8 +109,8 @@ export default function DocSearch() {
       {/* No Results */}
       {isOpen && query && !isLoading && results.length === 0 && (
         <div className="absolute top-full mt-2 w-full">
-          <Card className="bg-white shadow-lg border border-gray-200">
-            <CardContent className="p-4 text-center text-gray-600">
+          <Card className="bg-white shadow-lg border border-border">
+            <CardContent className="p-4 text-center text-muted-foreground">
               No results found for "{query}"
             </CardContent>
           </Card>

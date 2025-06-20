@@ -273,7 +273,8 @@ export default function ChatContainer() {
       }
     }
   }, [
-    state.conversation?.messages.map(msg => msg.content).join(''), // Re-run when any message content changes
+    state.conversation?.messages?.length, // Use length instead of join to avoid creating new strings
+    state.conversation?.messages?.[state.conversation.messages.length - 1]?.content, // Only check last message content
     userHasScrolled,
     smoothScrollToBottom
   ]);
@@ -483,6 +484,10 @@ export default function ChatContainer() {
   }, [sessionId]); // Depend on sessionId so it runs after sessionId is generated
 
   // Load usage status whenever sessionId, userEmail, or userKeys change
+  // Use primitive values to avoid object dependency issues on mobile
+  const hasOwnOpenAIKey = Boolean(userKeys.openai);
+  const hasOwnAnthropicKey = Boolean(userKeys.anthropic);
+  
   useEffect(() => {
     // Skip if no email (user hasn't provided one yet)
     if (!userEmail) {
@@ -507,8 +512,11 @@ export default function ChatContainer() {
         });
 
         // Include user keys in the request if available
-        if (userKeys.openai || userKeys.anthropic) {
-          params.append('userKeys', JSON.stringify(userKeys));
+        if (hasOwnOpenAIKey || hasOwnAnthropicKey) {
+          params.append('userKeys', JSON.stringify({
+            openai: userKeys.openai,
+            anthropic: userKeys.anthropic
+          }));
         }
         
         const response = await fetch(`/api/chat/email-usage?${params}`);
@@ -524,7 +532,7 @@ export default function ChatContainer() {
     };
 
     loadUsageStatus();
-  }, [sessionId, userEmail, userKeys]);
+  }, [sessionId, userEmail, hasOwnOpenAIKey, hasOwnAnthropicKey]);
 
   // Handler for usage status changes (used by reset button)
   const handleUsageStatusChange = (newStatus: UsageStatus | null) => {

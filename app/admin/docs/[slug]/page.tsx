@@ -34,10 +34,10 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
       </Link>
 
       {/* Document Header */}
-      <Card className="bg-white shadow-sm border border-gray-200 mb-8">
+      <Card className="bg-white shadow-sm border border-border mb-8">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-600 mb-2">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
               <FileText className="w-4 h-4" />
               <span className="text-sm">{doc.filePath}</span>
             </div>
@@ -47,37 +47,37 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
               className="text-muted-foreground hover:text-foreground" 
             />
           </div>
-          <CardTitle className="text-3xl text-gray-900">{doc.title}</CardTitle>
+          <CardTitle className="text-3xl text-foreground">{doc.title}</CardTitle>
           {doc.frontMatter.description && (
-            <p className="text-gray-600 mt-2">{doc.frontMatter.description}</p>
+            <p className="text-muted-foreground mt-2">{doc.frontMatter.description}</p>
           )}
         </CardHeader>
       </Card>
 
       {/* Document Content */}
-      <Card className="bg-white shadow-sm border border-gray-200">
+      <Card className="bg-white shadow-sm border border-border">
         <CardContent className="prose max-w-none pt-6">
           <MarkdownRenderer content={doc.content} />
         </CardContent>
       </Card>
 
       {/* Document Metadata */}
-      <Card className="bg-white shadow-sm border border-gray-200 mt-6">
+      <Card className="bg-white shadow-sm border border-border mt-6">
         <CardContent className="pt-6">
-          <h3 className="text-gray-900 font-semibold mb-4">Document Information</h3>
+          <h3 className="text-foreground font-semibold mb-4">Document Information</h3>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-600">Last Modified</dt>
-              <dd className="text-gray-900"><ClientDate date={doc.lastModified} format="datetime" /></dd>
+              <dt className="text-muted-foreground">Last Modified</dt>
+              <dd className="text-foreground"><ClientDate date={doc.lastModified} format="datetime" /></dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-600">File Path</dt>
-              <dd className="font-mono text-gray-900">{doc.filePath}</dd>
+              <dt className="text-muted-foreground">File Path</dt>
+              <dd className="font-mono text-foreground">{doc.filePath}</dd>
             </div>
             {Object.entries(doc.frontMatter).map(([key, value]) => (
               <div key={key} className="flex justify-between">
-                <dt className="text-gray-600 capitalize">{key}</dt>
-                <dd className="text-gray-900">{String(value)}</dd>
+                <dt className="text-muted-foreground capitalize">{key}</dt>
+                <dd className="text-foreground">{String(value)}</dd>
               </div>
             ))}
           </dl>

@@ -42,7 +42,7 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Component List */}
       <div className="lg:col-span-1">
-        <Card className="bg-white shadow-sm border border-gray-200 h-fit">
+        <Card className="bg-white shadow-sm border border-border h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Folder className="w-5 h-5" />
@@ -52,7 +52,7 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
           <CardContent className="space-y-4">
             {categories.map((category) => (
               <div key={category}>
-                <h3 className="font-semibold text-sm text-gray-900 mb-2 uppercase tracking-wide">
+                <h3 className="font-semibold text-sm text-foreground mb-2 uppercase tracking-wide">
                   {category}
                 </h3>
                 <div className="space-y-1">
@@ -60,13 +60,13 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                     <button
                       key={component.name}
                       onClick={() => setSelectedComponent(component)}
-                      className={`w-full text-left p-2 rounded-md text-sm hover:bg-gray-100 transition-colors text-gray-900 ${
-                        selectedComponent?.name === component.name ? 'bg-gray-100' : ''
+                      className={`w-full text-left p-2 rounded-md text-sm hover:bg-muted transition-colors text-foreground ${
+                        selectedComponent?.name === component.name ? 'bg-muted' : ''
                       }`}
                     >
                       <div className="font-medium">{component.name}</div>
                       {component.description && (
-                        <div className="text-xs text-gray-600 line-clamp-1">
+                        <div className="text-xs text-muted-foreground line-clamp-1">
                           {component.description}
                         </div>
                       )}
@@ -82,12 +82,12 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
       {/* Component Details */}
       <div className="lg:col-span-2">
         {selectedComponent ? (
-          <Card className="bg-white shadow-sm border border-gray-200">
+          <Card className="bg-white shadow-sm border border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl text-gray-900">{selectedComponent.name}</CardTitle>
-                  <CardDescription className="flex items-center gap-2 mt-1 text-gray-600">
+                  <CardTitle className="text-2xl text-foreground">{selectedComponent.name}</CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-1 text-muted-foreground">
                     <Code2 className="w-4 h-4" />
                     {selectedComponent.filePath}
                   </CardDescription>
@@ -95,7 +95,7 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                 <Badge variant="secondary">{selectedComponent.category}</Badge>
               </div>
               {selectedComponent.description && (
-                <p className="text-gray-700 mt-2">{selectedComponent.description}</p>
+                <p className="text-foreground/80 mt-2">{selectedComponent.description}</p>
               )}
             </CardHeader>
             <CardContent>
@@ -110,25 +110,25 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                   {selectedComponent.props && selectedComponent.props.length > 0 ? (
                     <div className="space-y-3">
                       {selectedComponent.props.map((prop) => (
-                        <Card key={prop.name} className="bg-gray-50 border border-gray-200">
+                        <Card key={prop.name} className="bg-muted/50 border border-border">
                           <CardContent className="pt-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <code className="text-sm font-mono text-gray-900">{prop.name}</code>
+                                  <code className="text-sm font-mono text-foreground">{prop.name}</code>
                                   {prop.required && (
                                     <Badge variant="error" className="text-xs">Required</Badge>
                                   )}
                                 </div>
-                                <div className="text-sm text-gray-700 mb-1">
-                                  Type: <code className="text-xs text-gray-800">{prop.type}</code>
+                                <div className="text-sm text-foreground/80 mb-1">
+                                  Type: <code className="text-xs text-foreground/90">{prop.type}</code>
                                 </div>
                                 {prop.description && (
-                                  <p className="text-sm text-gray-700">{prop.description}</p>
+                                  <p className="text-sm text-foreground/80">{prop.description}</p>
                                 )}
                                 {prop.defaultValue && (
-                                  <div className="text-sm text-gray-700 mt-1">
-                                    Default: <code className="text-xs text-gray-800">{prop.defaultValue}</code>
+                                  <div className="text-sm text-foreground/80 mt-1">
+                                    Default: <code className="text-xs text-foreground/90">{prop.defaultValue}</code>
                                   </div>
                                 )}
                               </div>
@@ -149,7 +149,7 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-600">
+                    <div className="text-center py-8 text-muted-foreground">
                       <Code2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
                       <p>No props documentation found</p>
                       <p className="text-sm">Props will be auto-detected from TypeScript interfaces</p>
@@ -161,8 +161,8 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                   <div>
                                          <h3 className="font-semibold mb-2">Import Statement</h3>
                     <div className="relative">
-                      <pre className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm overflow-x-auto">
-                        <code className="text-gray-900">{`import { ${selectedComponent.name} } from "@${selectedComponent.filePath.replace('.tsx', '')}";`}</code>
+                      <pre className="bg-muted border border-border rounded-lg p-4 text-sm overflow-x-auto">
+                        <code className="text-foreground">{`import { ${selectedComponent.name} } from "@${selectedComponent.filePath.replace('.tsx', '')}";`}</code>
                       </pre>
                       <Button
                         size="sm"
@@ -181,8 +181,8 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                   <div>
                                          <h3 className="font-semibold mb-2">Basic Usage</h3>
                     <div className="relative">
-                      <pre className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm overflow-x-auto">
-                        <code className="text-gray-900">{`<${selectedComponent.name}${selectedComponent.props?.some(p => p.required) ? '\n' + selectedComponent.props.filter(p => p.required).map(p => `  ${p.name}={/* ${p.type} */}`).join('\n') + '\n' : ' '}>`}</code>
+                      <pre className="bg-muted border border-border rounded-lg p-4 text-sm overflow-x-auto">
+                        <code className="text-foreground">{`<${selectedComponent.name}${selectedComponent.props?.some(p => p.required) ? '\n' + selectedComponent.props.filter(p => p.required).map(p => `  ${p.name}={/* ${p.type} */}`).join('\n') + '\n' : ' '}>`}</code>
                       </pre>
                       <Button
                         size="sm"
@@ -200,7 +200,7 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
                 </TabsContent>
 
                 <TabsContent value="examples" className="space-y-4">
-                  <div className="text-center py-8 text-gray-600">
+                  <div className="text-center py-8 text-muted-foreground">
                     <Eye className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>Live examples coming soon</p>
                     <p className="text-sm">This will show interactive component examples</p>
@@ -210,10 +210,10 @@ export default function ComponentViewer({ components }: ComponentViewerProps) {
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-white shadow-sm border border-gray-200">
+          <Card className="bg-white shadow-sm border border-border">
             <CardContent className="text-center py-12">
               <Code2 className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Select a component from the list to view its documentation
               </p>
             </CardContent>

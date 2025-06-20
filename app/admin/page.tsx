@@ -64,7 +64,7 @@ export default function AdminPage() {
           const Icon = feature.icon;
           return (
             <Link key={feature.href} href={feature.href}>
-              <Card className="bg-white shadow-sm hover:shadow-lg transition-shadow cursor-pointer h-full border border-gray-200">
+              <Card className="bg-white shadow-sm hover:shadow-lg transition-shadow cursor-pointer h-full border border-border">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <Icon className="w-8 h-8 text-primary" />
@@ -72,8 +72,8 @@ export default function AdminPage() {
                       {feature.status}
                     </span>
                   </div>
-                  <CardTitle className="mt-4 text-gray-900">{feature.title}</CardTitle>
-                  <CardDescription className="text-gray-600">{feature.description}</CardDescription>
+                  <CardTitle className="mt-4 text-foreground">{feature.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{feature.description}</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
@@ -81,17 +81,17 @@ export default function AdminPage() {
         })}
       </div>
 
-      <Card className="bg-white shadow-sm mt-8 border border-gray-200">
+      <Card className="bg-white shadow-sm mt-8 border border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <Code2 className="w-5 h-5" />
             Quick Start
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h3 className="text-gray-900 font-semibold">Features</h3>
-            <ul className="space-y-2 text-gray-700">
+            <h3 className="text-foreground font-semibold">Features</h3>
+            <ul className="space-y-2 text-foreground/80">
               <li className="flex items-center gap-2">
                 <Search className="w-4 h-4" />
                 Full-text search across all documentation
@@ -112,8 +112,8 @@ export default function AdminPage() {
           </div>
           
           <div>
-            <h3 className="text-gray-900 font-semibold">Educational Content</h3>
-            <p className="text-gray-700">
+            <h3 className="text-foreground font-semibold">Educational Content</h3>
+            <p className="text-foreground/80">
               This documentation system is designed to be educational and will be featured
               on SoloBuild.dev as an example of building in public with modern tools.
             </p>

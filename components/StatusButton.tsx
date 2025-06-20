@@ -90,12 +90,12 @@ export default function StatusButton({
     try {
       setIsResetting(true);
       
-      // Get user email from localStorage
-      const userEmail = localStorage.getItem('user_email');
+      // Get user email from localStorage (safe for SSR)
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('user_email') : null;
       console.log('Reset Usage - Email from localStorage:', userEmail);
       
       if (!userEmail) {
-        console.log('No email found in localStorage. Available keys:', Object.keys(localStorage));
+        console.log('No email found in localStorage. Available keys:', typeof window !== 'undefined' ? Object.keys(localStorage) : []);
         toast.error('No email found - please restart your session');
         return;
       }
@@ -140,8 +140,8 @@ export default function StatusButton({
 
   const refreshUsageStatus = async () => {
     try {
-      // Get user email from localStorage
-      const userEmail = localStorage.getItem('user_email');
+      // Get user email from localStorage (safe for SSR)
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('user_email') : null;
       console.log('Refresh Usage - Email from localStorage:', userEmail);
       
       if (!userEmail) {

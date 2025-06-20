@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuth } from '@/lib/auth/admin-auth';
+import { updateSession } from '@/utils/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Update Supabase session
+  const supabaseResponse = await updateSession(request);
 
   // Only protect admin routes (excluding login and verify pages)
   if (pathname.startsWith('/admin') && 
@@ -28,11 +32,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // Session is valid - allow access
-    return NextResponse.next();
+    return supabaseResponse;
   }
 
-  // For non-admin routes, continue normally
-  return NextResponse.next();
+  // For non-admin routes, continue with Supabase session
+  return supabaseResponse;
 }
 
 export const config = {
