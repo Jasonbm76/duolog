@@ -1,16 +1,26 @@
 #!/bin/bash
 
-# Database safety wrapper for DuoLog.ai
-# Prevents destructive operations in production
+# Database Safety Check Script
+# Prevents accidental operations on production data
 
-if [ "$VERCEL_ENV" = "production" ] || [ "$NODE_ENV" = "production" ]; then
-  echo "🚨 PRODUCTION ENVIRONMENT DETECTED"
-  echo "❌ Database reset operations are FORBIDDEN"
-  echo "❌ Only migration files allowed: psql -f migration.sql"
-  echo "❌ Operation blocked for data protection"
-  exit 1
+echo "🤖 DuoLog Database Safety Check"
+echo "⚠️  This affects REAL AI collaboration conversation data"
+
+# Check if we're in production
+if [ "$NODE_ENV" = "production" ] || [ "$VERCEL_ENV" = "production" ]; then
+    echo "❌ FORBIDDEN: Cannot run database operations in production"
+    echo "⚠️  This would affect live DuoLog user conversations"
+    exit 1
 fi
 
+# Check for production-like database URLs
+if [[ "$DATABASE_URL" == *"amazonaws.com"* ]] || [[ "$DATABASE_URL" == *"supabase.co"* ]]; then
+    echo "❌ FORBIDDEN: Production database URL detected"
+    echo "⚠️  This would affect live user data"
+    exit 1
+fi
+
+# Check if we're in preview environment
 if [ "$VERCEL_ENV" = "preview" ]; then
   echo "⚠️  PREVIEW ENVIRONMENT - Proceed with caution"
   read -p "Continue? (y/N): " confirm
@@ -20,4 +30,4 @@ if [ "$VERCEL_ENV" = "preview" ]; then
 fi
 
 echo "✅ Local development environment confirmed"
-echo "✅ Database operation allowed"
+echo "✅ Safe to modify test conversation data"

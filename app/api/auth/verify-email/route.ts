@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // Validate and sanitize token
     const tokenValidation = validateText(token, {
       maxLength: 64,
-      minLength: 64,
+      minLength: 32,
       allowHtml: false,
       allowSpecialChars: false
     });
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Validate and sanitize token
     const tokenValidation = validateText(token, {
       maxLength: 64,
-      minLength: 64,
+      minLength: 32,
       allowHtml: false,
       allowSpecialChars: false
     });

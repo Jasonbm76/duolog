@@ -8,6 +8,13 @@ interface APIKeys {
   anthropic?: string;
 }
 
+interface FileData {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 interface StartConversationOptions {
   prompt: string;
   userKeys?: APIKeys;
@@ -15,6 +22,7 @@ interface StartConversationOptions {
   email?: string;
   fingerprint?: string;
   tone?: string;
+  file?: FileData;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -30,6 +38,7 @@ interface ContinueConversationOptions {
   email?: string;
   fingerprint?: string;
   tone?: string;
+  file?: FileData;
   onRoundStart?: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => void;
   onContentChunk?: (round: number, model: 'claude' | 'gpt-4', content: string) => void;
   onRoundComplete?: (round: number, model: 'claude' | 'gpt-4') => void;
@@ -56,6 +65,7 @@ class RealConversationService {
       email,
       fingerprint,
       tone,
+      file,
       onRoundStart,
       onContentChunk,
       onRoundComplete,
@@ -84,6 +94,7 @@ class RealConversationService {
           email,
           fingerprint,
           tone,
+          file,
         }),
         signal: this.abortController.signal,
       });

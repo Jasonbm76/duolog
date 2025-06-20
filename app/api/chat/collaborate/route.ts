@@ -24,6 +24,76 @@ function fixChunkNumbering(chunk: string): string {
   return chunk;
 }
 
+// Helper function to extract content from different file types
+async function extractFileContent(file: { url: string; name: string; type: string; size: number }): Promise<{ content: string; isBase64?: boolean; mediaType?: string }> {
+  try {
+    const response = await fetch(file.url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+
+    // Handle different file types
+    if (file.type === 'text/plain' || file.type === 'text/markdown') {
+      return { content: await response.text() };
+    } else if (file.type === 'application/json') {
+      const json = await response.json();
+      return { content: JSON.stringify(json, null, 2) };
+    } else if (file.type.startsWith('text/')) {
+      // Handle other text files (css, js, html, etc.)
+      return { content: await response.text() };
+    } else if (file.type === 'application/pdf') {
+      // For PDFs, always use universal text extraction (much more cost-effective)
+      const arrayBuffer = await response.arrayBuffer();
+      const { extractPDFText } = await import('@/lib/utils/pdf-extractor');
+      return { content: await extractPDFText(arrayBuffer) };
+    } else if (file.type.startsWith('image/')) {
+      // For images, return base64 encoded data
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      return { 
+        content: base64, 
+        isBase64: true, 
+        mediaType: file.type 
+      };
+    } else {
+      return { content: `[File type ${file.type} not supported for content extraction]` };
+    }
+  } catch (error) {
+    console.error('Error extracting file content:', error);
+    return { content: `[Error reading file content: ${error instanceof Error ? error.message : 'Unknown error'}]` };
+  }
+}
+
+// Helper function to generate file context for prompts
+async function getFileContext(file?: { url: string; name: string; type: string; size: number }): Promise<string> {
+  if (!file) return '';
+  
+  const fileData = await extractFileContent(file);
+  
+  if (fileData.isBase64 && fileData.mediaType) {
+    // For base64 files (images), format for Claude
+    return `
+The user has attached a file: "${file.name}" (${file.type}, ${Math.round(file.size / 1024)}KB)
+
+<document>
+<source>${file.name}</source>
+<media_type>${fileData.mediaType}</media_type>
+<data>${fileData.content}</data>
+</document>
+
+Please analyze this file content as part of your response. Consider how it relates to the user's question.`;
+  } else {
+    // For text files and PDFs (extracted text), include content directly
+    return `
+The user has attached a file: "${file.name}" (${file.type}, ${Math.round(file.size / 1024)}KB)
+
+File content:
+${fileData.content}
+
+Please analyze this file content as part of your response. Consider how it relates to the user's question.`;
+  }
+}
+
 // Helper function to generate tone instructions
 function getToneInstructions(tone: string = 'conversational'): string {
   const toneInstructions = {
@@ -51,12 +121,18 @@ interface CollaborateRequest {
   email: string; // Now required
   fingerprint?: string;
   tone?: string;
+  file?: {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: CollaborateRequest = await request.json();
-    const { prompt, userKeys, sessionId, email, fingerprint, tone } = body;
+    const { prompt, userKeys, sessionId, email, fingerprint, tone, file } = body;
 
     // Validate and sanitize prompt
     const promptValidation = validateText(prompt, {
@@ -192,101 +268,27 @@ export async function POST(request: NextRequest) {
           );
         };
 
-        // Round 1: GPT-4 initial response
+        // Round 1: Start with Claude if file is present (better document handling)
+        const initialModel = file ? 'claude' : 'gpt-4';
+        
         await writer.write({
           type: 'round_start',
           round: currentRound,
-          model: 'gpt-4',
+          model: initialModel,
           inputPrompt: promptValidation.sanitized,
         });
 
-        let gptResult1;
-        try {
-          // Check if OpenAI is available before attempting
-          if (!userKeys?.openai && !process.env.OPENAI_API_KEY) {
-            throw new Error('No OpenAI API key available');
-          }
-          
+        if (initialModel === 'claude') {
+          // Start with Claude when file is present
           const toneInstruction = getToneInstructions(tone);
-          
-          gptResult1 = await openai.streamCompletion({
-            prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. ${toneInstruction}
-
-A user has asked: "${promptValidation.sanitized}"
-
-Provide a thorough, helpful response. After you respond, Claude will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.`,
-            apiKey: userKeys?.openai,
-            onChunk: (chunk) => {
-              try {
-                const fixedChunk = fixChunkNumbering(chunk);
-                writer.write({
-                  type: 'content_chunk',
-                  round: currentRound,
-                  model: 'gpt-4',
-                  content: fixedChunk,
-                });
-              } catch (error) {
-                // Stream might be closed, ignore write errors
-                console.warn('Failed to write chunk to closed stream');
-              }
-            },
-          });
-
-          // Fix formatting and add to conversation history
-          const fixedContent = fixGptNumbering(gptResult1.content);
-          conversationHistory.push({ role: 'gpt-4', content: fixedContent });
-          lastSpeaker = 'gpt-4';
-
-          // Send token update for GPT-4 round 1
-          if (gptResult1.usage) {
-            await writer.write({
-              type: 'token_update',
-              tokenUsage: {
-                model: 'gpt-4',
-                inputTokens: gptResult1.usage.inputTokens,
-                outputTokens: gptResult1.usage.outputTokens,
-              },
-            });
-          }
-
-          await writer.write({
-            type: 'round_complete',
-            round: currentRound,
-            model: 'gpt-4',
-          });
-
-          currentRound++;
-        } catch (error) {
-          console.error('🚨 GPT-4 FAILED in production:', {
-            error: error instanceof Error ? error.message : String(error),
-            hasUserOpenAI: !!userKeys?.openai,
-            hasEnvOpenAI: !!process.env.OPENAI_API_KEY,
-            apiKeyLength: userKeys?.openai?.length || process.env.OPENAI_API_KEY?.length || 0
-          });
-          
-          // Send error info to client for debugging
-          await writer.write({
-            type: 'error', 
-            error: `GPT-4 unavailable: ${error instanceof Error ? error.message : 'API key issue'}. Starting with Claude instead.`
-          });
-          
-          // Update round to show Claude starting
-          await writer.write({
-            type: 'round_start',
-            round: currentRound,
-            model: 'claude',
-            inputPrompt: promptValidation.sanitized,
-          });
-          
-          // Fallback to Claude for initial response
-          const toneInstruction = getToneInstructions(tone);
+          const fileContext = await getFileContext(file);
           
           const claudeResult1 = await anthropic.streamCompletion({
-            prompt: `You are Claude providing the initial response to a user question. ${toneInstruction}
+            prompt: `You are Claude, collaborating with GPT-4 to provide the best possible answer. ${toneInstruction}
 
-A user has asked: "${promptValidation.sanitized}"
+A user has asked: "${promptValidation.sanitized}"${fileContext}
 
-Provide a thorough, helpful response. Focus on being comprehensive and addressing all aspects of their question.`,
+Provide a thorough, helpful response. After you respond, GPT-4 will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.${file ? ' Pay special attention to analyzing the attached file.' : ''}`,
             apiKey: userKeys?.anthropic,
             onChunk: (chunk) => {
               try {
@@ -324,6 +326,135 @@ Provide a thorough, helpful response. Focus on being comprehensive and addressin
           });
 
           currentRound++;
+        } else {
+          // Start with GPT-4 when no file is present
+          let gptResult1;
+          try {
+            // Check if OpenAI is available before attempting
+            if (!userKeys?.openai && !process.env.OPENAI_API_KEY) {
+              throw new Error('No OpenAI API key available');
+            }
+            
+            const toneInstruction = getToneInstructions(tone);
+            const fileContext = await getFileContext(file);
+            
+            gptResult1 = await openai.streamCompletion({
+              prompt: `You are GPT-4, collaborating with Claude to provide the best possible answer. ${toneInstruction}
+
+A user has asked: "${promptValidation.sanitized}"${fileContext}
+
+Provide a thorough, helpful response. After you respond, Claude will review your answer and potentially add to it or suggest improvements. Focus on being comprehensive but know that this is the start of a collaborative process.`,
+              apiKey: userKeys?.openai,
+              onChunk: (chunk) => {
+                try {
+                  const fixedChunk = fixChunkNumbering(chunk);
+                  writer.write({
+                    type: 'content_chunk',
+                    round: currentRound,
+                    model: 'gpt-4',
+                    content: fixedChunk,
+                  });
+                } catch (error) {
+                  // Stream might be closed, ignore write errors
+                  console.warn('Failed to write chunk to closed stream');
+                }
+              },
+            });
+
+            // Fix formatting and add to conversation history
+            const fixedContent = fixGptNumbering(gptResult1.content);
+            conversationHistory.push({ role: 'gpt-4', content: fixedContent });
+            lastSpeaker = 'gpt-4';
+
+            // Send token update for GPT-4 round 1
+            if (gptResult1.usage) {
+              await writer.write({
+                type: 'token_update',
+                tokenUsage: {
+                  model: 'gpt-4',
+                  inputTokens: gptResult1.usage.inputTokens,
+                  outputTokens: gptResult1.usage.outputTokens,
+                },
+              });
+            }
+
+            await writer.write({
+              type: 'round_complete',
+              round: currentRound,
+              model: 'gpt-4',
+            });
+
+            currentRound++;
+          } catch (error) {
+            console.error('🚨 GPT-4 FAILED in production:', {
+              error: error instanceof Error ? error.message : String(error),
+              hasUserOpenAI: !!userKeys?.openai,
+              hasEnvOpenAI: !!process.env.OPENAI_API_KEY,
+              apiKeyLength: userKeys?.openai?.length || process.env.OPENAI_API_KEY?.length || 0
+            });
+            
+            // Send error info to client for debugging
+            await writer.write({
+              type: 'error', 
+              error: `GPT-4 unavailable: ${error instanceof Error ? error.message : 'API key issue'}. Starting with Claude instead.`
+            });
+            
+            // Update round to show Claude starting
+            await writer.write({
+              type: 'round_start',
+              round: currentRound,
+              model: 'claude',
+              inputPrompt: promptValidation.sanitized,
+            });
+            
+            // Fallback to Claude for initial response
+            const toneInstruction = getToneInstructions(tone);
+            const fileContext = await getFileContext(file);
+            
+            const claudeResult1 = await anthropic.streamCompletion({
+              prompt: `You are Claude providing the initial response to a user question. ${toneInstruction}
+
+A user has asked: "${promptValidation.sanitized}"${fileContext}
+
+Provide a thorough, helpful response. Focus on being comprehensive and addressing all aspects of their question.${file ? ' Pay special attention to analyzing the attached file.' : ''}`,
+              apiKey: userKeys?.anthropic,
+              onChunk: (chunk) => {
+                try {
+                  writer.write({
+                    type: 'content_chunk',
+                    round: currentRound,
+                    model: 'claude',
+                    content: chunk,
+                  });
+                } catch (error) {
+                  // Stream might be closed, ignore write errors
+                  console.warn('Failed to write chunk to closed stream');
+                }
+              },
+            });
+
+            conversationHistory.push({ role: 'claude', content: claudeResult1.content });
+            lastSpeaker = 'claude';
+
+            if (claudeResult1.usage) {
+              await writer.write({
+                type: 'token_update',
+                tokenUsage: {
+                  model: 'claude-3-sonnet',
+                  inputTokens: claudeResult1.usage.inputTokens,
+                  outputTokens: claudeResult1.usage.outputTokens,
+                },
+              });
+            }
+
+            await writer.write({
+              type: 'round_complete',
+              round: currentRound,
+              model: 'claude',
+            });
+
+            currentRound++;
+          }
         }
 
         // Start iterative conversation

@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       fingerprint, 
       persistentId, 
       email,
-      userKeys 
+      userKeys,
+      file 
     } = body;
 
     // Validate required fields

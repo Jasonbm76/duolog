@@ -2,20 +2,21 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowUp, Loader2, Square, Mic, MicOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import FileUpload from '@/components/FileUpload';
+import type { FileUploadResult } from '@/lib/supabase-storage';
 
 // Web Speech API TypeScript declarations
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
 interface PromptInputProps {
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, file?: File, fileUploadResult?: FileUploadResult) => void;
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
@@ -24,6 +25,9 @@ interface PromptInputProps {
   selectedTone?: string;
   onToneChange?: (tone: string) => void;
   toneOptions?: Array<{ value: string; label: string; description: string }>;
+  email?: string;
+  sessionId?: string;
+  onEmailRequired?: () => void;
 }
 
 export default function PromptInput({ 
@@ -35,12 +39,18 @@ export default function PromptInput({
   className,
   selectedTone = 'conversational',
   onToneChange,
-  toneOptions = []
+  toneOptions = [],
+  email,
+  sessionId,
+  onEmailRequired
 }: PromptInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | undefined>();
+  const [fileUploadResult, setFileUploadResult] = useState<FileUploadResult | undefined>();
+  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 
@@ -192,11 +202,79 @@ export default function PromptInput({
     }
   };
 
-  const handleSubmit = () => {
-    if (prompt.trim() && !isLoading && !disabled) {
-      onSubmit(prompt.trim());
-      setPrompt('');
+  // File upload handlers
+  const handleFileSelect = async (file: File, uploadResult: FileUploadResult) => {
+    setSelectedFile(file);
+    setFileUploadResult(uploadResult);
+    
+    if (uploadResult.success) {
+      // File will be uploaded when message is sent
+      toast.success(`File selected: ${file.name}`);
     }
+  };
+
+  const handleFileRemove = () => {
+    setSelectedFile(undefined);
+    setFileUploadResult(undefined);
+  };
+
+  const handleSubmit = async () => {
+    if ((!prompt.trim() && !selectedFile) || isLoading || disabled) {
+      return;
+    }
+
+    // Check if we need email for file upload or message sending
+    if (!email && (selectedFile || prompt.trim())) {
+      onEmailRequired?.();
+      return;
+    }
+
+    // If there's a file, upload it first
+    if (selectedFile) {
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        if (email) formData.append('email', email);
+        if (sessionId) formData.append('sessionId', sessionId);
+        
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const uploadResult = await response.json();
+        setFileUploadResult(uploadResult);
+        
+        // Show upload success
+        toast.success(`✅ File uploaded successfully`);
+        
+        // Submit with file data
+        onSubmit(prompt.trim(), selectedFile, uploadResult);
+        
+      } catch (error) {
+        console.error('File upload error:', error);
+        toast.error('Failed to upload file. Please try again.');
+        setIsUploading(false);
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      // Submit without file
+      onSubmit(prompt.trim());
+    }
+
+    // Clear form
+    setPrompt('');
+    setSelectedFile(undefined);
+    setFileUploadResult(undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -211,43 +289,14 @@ export default function PromptInput({
     }
   };
 
-  const canSubmit = prompt.trim().length > 0 && !isLoading && !disabled;
+  const canSubmit = (prompt.trim().length > 0 || selectedFile) && !isLoading && !disabled && !isUploading;
 
   return (
     <>
       {/* Desktop Version */}
       <div className={cn("hidden lg:block flex-shrink-0", className?.includes('m-0') ? "" : "glass-card p-4 mt-6", className)}>
         <div className="flex gap-3 items-center">
-          {/* Textarea */}
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              disabled={disabled || isLoading}
-              className={cn(
-                "w-full resize-none border border-on-dark/20 rounded-xl px-4 py-3",
-                "text-on-dark placeholder-on-dark/40 bg-neutral-900/50 backdrop-blur-sm",
-                "focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary",
-                "min-h-[80px] max-h-48 leading-6",
-                "disabled:bg-on-dark/5 disabled:text-on-dark disabled:cursor-not-allowed",
-                "transition-colors scrollbar-hide overflow-hidden"
-              )}
-              rows={2}
-            />
-            
-            {/* Character count for longer prompts */}
-            {prompt.length > 100 && (
-              <div className="absolute -top-6 right-0 text-xs text-on-dark">
-                {prompt.length} characters
-              </div>
-            )}
-          </div>
-
-
-          {/* Microphone Button - Desktop */}
+          {/* Microphone Button - Desktop (moved to left) */}
           {isClient && (
             <div className="relative">
               <button
@@ -277,15 +326,49 @@ export default function PromptInput({
                   <Mic className="w-5 h-5" />
                 )}
                 
-                {/* AI Badge */}
-                {speechSupported && (
-                  <div className="absolute -top-3 -right-3 bg-success font-bold text-on-dark text-xs font-bold px-1 py-0.5 rounded leading-none">
-                    AI
-                  </div>
-                )}
               </button>
             </div>
           )}
+
+          {/* Textarea with embedded file upload */}
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              disabled={disabled || isLoading}
+              className={cn(
+                "w-full resize-none border border-on-dark/20 rounded-xl px-4 py-3 pr-12",
+                "text-on-dark placeholder-on-dark/40 bg-neutral-900/50 backdrop-blur-sm",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary",
+                "min-h-[80px] max-h-48 leading-6",
+                "disabled:bg-on-dark/5 disabled:text-on-dark disabled:cursor-not-allowed",
+                "transition-colors scrollbar-hide overflow-hidden"
+              )}
+              rows={2}
+            />
+            
+            {/* File Upload Button - Inside textarea on the right, vertically centered */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onFileRemove={handleFileRemove}
+                selectedFile={selectedFile}
+                uploadResult={fileUploadResult}
+                isUploading={isUploading}
+                disabled={disabled || isLoading}
+              />
+            </div>
+            
+            {/* Character count for longer prompts */}
+            {prompt.length > 100 && (
+              <div className="absolute -top-6 right-0 text-xs text-on-dark">
+                {prompt.length} characters
+              </div>
+            )}
+          </div>
 
           {/* Submit/Stop Button - Desktop */}
           <button
@@ -335,7 +418,7 @@ export default function PromptInput({
           
           {/* Tone Selector - Desktop only */}
           {toneOptions.length > 0 && onToneChange && (
-            <div className="flex items-center gap-2 mr-[120px]">
+            <div className="flex items-center gap-2">
               <span className="text-on-dark/40 text-xs">Tone:</span>
               <select
                 value={selectedTone}
@@ -358,7 +441,7 @@ export default function PromptInput({
       <div className="lg:hidden flex-shrink-0 px-4 py-3">
         <div className="flex items-center gap-3 bg-on-dark/10 rounded-full p-2">
 
-          {/* Microphone Button */}
+          {/* Microphone Button - Mobile (moved to left) */}
           {isClient && (
             <div className="relative">
               <button
@@ -388,18 +471,12 @@ export default function PromptInput({
                   <Mic className="w-5 h-5" />
                 )}
                 
-                {/* AI Badge */}
-                {speechSupported && (
-                  <div className="absolute -top-1 -right-1 bg-success text-white text-xs font-bold px-1 py-0.5 rounded-sm leading-none">
-                    AI
-                  </div>
-                )}
               </button>
             </div>
           )}
 
-          {/* Input Field */}
-          <div className="flex-1">
+          {/* Input Field with embedded file upload */}
+          <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -408,7 +485,7 @@ export default function PromptInput({
               placeholder={placeholder}
               disabled={disabled || isLoading}
               className={cn(
-                "w-full resize-none bg-transparent border-0 outline-0 px-2 py-2",
+                "w-full resize-none bg-transparent border-0 outline-0 px-2 py-2 pr-10",
                 "text-on-dark placeholder-on-dark/60 text-base leading-6",
                 "disabled:text-on-dark disabled:cursor-not-allowed",
                 "scrollbar-hide overflow-hidden"
@@ -416,6 +493,18 @@ export default function PromptInput({
               rows={1}
               style={{ height: '40px', maxHeight: '40px' }}
             />
+            
+            {/* File Upload Button - Inside textarea on the right, vertically centered */}
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onFileRemove={handleFileRemove}
+                selectedFile={selectedFile}
+                uploadResult={fileUploadResult}
+                isUploading={isUploading}
+                disabled={disabled || isLoading}
+              />
+            </div>
           </div>
 
           {/* Send Button */}

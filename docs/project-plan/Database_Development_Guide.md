@@ -22,7 +22,7 @@ cp .env.example .env.local
 For local development, your `.env.local` should contain:
 ```env
 # Local Supabase (already configured)
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:64321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 
 # Add your AI API keys
@@ -40,15 +40,15 @@ supabase start
 # - Pull and start Docker containers
 # - Run migrations from supabase/migrations/
 # - Seed data from supabase/seed.sql
-# - Start Supabase Studio at http://localhost:54323
+# - Start Supabase Studio at http://localhost:64323
 ```
 
 ### 3. Access Local Services
 
-- **Supabase Studio**: http://localhost:54323 (Database GUI)
-- **API**: http://localhost:54321
-- **Database**: postgresql://postgres:postgres@localhost:54322/postgres
-- **Email Testing**: http://localhost:54324
+- **Supabase Studio**: http://localhost:64323 (Database GUI)
+- **API**: http://localhost:64321
+- **Database**: postgresql://postgres:postgres@localhost:64322/postgres
+- **Email Testing**: http://localhost:64324
 
 ## Database Schema
 
@@ -116,10 +116,10 @@ supabase db reset --local
 
 ```bash
 # Connect to local database
-psql postgresql://postgres:postgres@localhost:54322/postgres
+psql postgresql://postgres:postgres@localhost:64322/postgres
 
 # Or use Supabase Studio GUI
-open http://localhost:54323
+open http://localhost:64323
 ```
 
 ### Working with Data

@@ -7,15 +7,13 @@ import { realConversationService } from '@/lib/services/real-conversation';
 import { mockConversationService } from '@/lib/services/mock-conversation-real-interface';
 import { Message } from '@/lib/types/chat';
 import { getMockConversationFlow, createMessageFromMockResponse } from '@/lib/mock-data/conversations';
-import { Bot, CheckCircle, AlertCircle, Settings, Brain, Wifi, WifiOff } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, Brain, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ConversationHeader from './ConversationHeader';
 import PromptInput from './PromptInput';
-import SettingsDialog from './SettingsDialog';
-import DevModeToggle from './DevModeToggle';
 import EmailForm from '@/components/EmailForm';
 import UnifiedStatusBar from './UnifiedStatusBar';
 import ChatNavigation from './ChatNavigation';
@@ -42,8 +40,6 @@ export default function ChatContainer() {
   const isAIActiveRef = useRef(false); // Track if any AI is currently active
   const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [userKeys, setUserKeys] = useState<{ openai: string; anthropic: string }>({ openai: '', anthropic: '' });
   const [isMockMode, setIsMockMode] = useState(false); // Default to real mode for testing
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,6 +59,8 @@ export default function ChatContainer() {
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [showVerificationWaiting, setShowVerificationWaiting] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string>('');
+  const [pendingFile, setPendingFile] = useState<File | undefined>();
+  const [pendingFileResult, setPendingFileResult] = useState<any>();
   const [isExistingUser, setIsExistingUser] = useState(false);
   
   // Connection status tracking
@@ -570,9 +568,11 @@ export default function ChatContainer() {
     // If there's a pending prompt, start the conversation
     if (pendingPrompt) {
       setTimeout(() => {
-        handleStartConversation(pendingPrompt);
+        handleStartConversation(pendingPrompt, pendingFile, pendingFileResult);
       }, 100);
       setPendingPrompt('');
+      setPendingFile(undefined);
+      setPendingFileResult(undefined);
     }
   };
 
@@ -582,7 +582,7 @@ export default function ChatContainer() {
     console.log('Resending verification email...');
   };
 
-  const handleStartConversationWithEmail = async (initialPrompt: string, emailToUse: string) => {
+  const handleStartConversationWithEmail = async (initialPrompt: string, emailToUse: string, file?: File, fileUploadResult?: any) => {
     console.log('handleStartConversationWithEmail called with:', { initialPrompt, emailToUse, sessionId });
     if (processingRef.current || !sessionId) {
       console.log('Conversation blocked:', { processingRefCurrent: processingRef.current, sessionId });
@@ -655,6 +655,12 @@ export default function ChatContainer() {
         fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         tone: selectedTone,
+        file: fileUploadResult ? {
+          url: fileUploadResult.fileUrl,
+          name: fileUploadResult.fileName,
+          type: fileUploadResult.fileType,
+          size: fileUploadResult.fileSize
+        } : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
           if (processingRef.current === false) {
@@ -807,18 +813,20 @@ export default function ChatContainer() {
     }
   };
 
-  const handleStartConversation = async (initialPrompt: string) => {
+  const handleStartConversation = async (initialPrompt: string, file?: File, fileUploadResult?: any) => {
     if (processingRef.current || !sessionId) return;
 
     // Check if we have user email - if not, show email capture modal
     if (!userEmail) {
       setShowEmailCapture(true);
       setPendingPrompt(initialPrompt);
+      setPendingFile(file);
+      setPendingFileResult(fileUploadResult);
       return;
     }
 
     // Use the existing email for conversation
-    return handleStartConversationWithEmail(initialPrompt, userEmail);
+    return handleStartConversationWithEmail(initialPrompt, userEmail, file, fileUploadResult);
   };
 
   const handleStop = () => {
@@ -883,7 +891,7 @@ export default function ChatContainer() {
     }
   };
 
-  const handleContinueConversation = async (followUpPrompt: string) => {
+  const handleContinueConversation = async (followUpPrompt: string, file?: File, fileUploadResult?: any) => {
     if (processingRef.current || !sessionId) return;
     processingRef.current = true;
 
@@ -913,6 +921,12 @@ export default function ChatContainer() {
         fingerprint: identifiers.fingerprint,
         userKeys: (userKeys.openai || userKeys.anthropic) ? userKeys : undefined,
         tone: selectedTone,
+        file: fileUploadResult ? {
+          url: fileUploadResult.fileUrl,
+          name: fileUploadResult.fileName,
+          type: fileUploadResult.fileType,
+          size: fileUploadResult.fileSize
+        } : undefined,
         onRoundStart: (round: number, model: 'claude' | 'gpt-4', inputPrompt?: string) => {
           // Guard against duplicate round starts and stale events after reset
           if (processingRef.current === false) {
@@ -1085,22 +1099,9 @@ export default function ChatContainer() {
         isMockMode={isMockMode}
         usageStatus={usageStatus}
         sessionId={sessionId}
-        onSettingsClick={() => setShowSettings(true)}
-        onStatusDropdownToggle={setIsStatusDropdownOpen}
         onUsageStatusChange={handleUsageStatusChange}
       />
       
-      {/* Mobile Settings Button - Responsive positioning */}
-      <div className="fixed top-[37px] right-[130px] sm:top-[37px] sm:right-[145px] md:right-[155px] z-[60] lg:hidden block">
-        <button
-          onClick={() => setShowSettings(true)}
-          className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-          aria-label="Settings"
-        >
-          <Settings className="w-5 h-5 text-on-dark" />
-        </button>
-      </div>
-
       {/* Mobile Status Bar - Responsive positioning */}
       <div className="fixed top-[37px] right-[81px] sm:top-[37px] sm:right-[96px] md:right-[100px] z-[60] lg:hidden block">
         <UnifiedStatusBar
@@ -1108,16 +1109,15 @@ export default function ChatContainer() {
           isMockMode={isMockMode}
           usageStatus={usageStatus}
           sessionId={sessionId}
-          onSettingsClick={() => setShowSettings(true)}
           onUsageStatusChange={handleUsageStatusChange}
           connectionStatus={connectionStatus}
           lastConnectionCheck={lastConnectionCheck}
         />
       </div>
 
-      {/* Connection Status Indicator - Desktop Only */}
+      {/* Connection Status Indicator - Only show on large screens (1400px+) */}
       {isClient && (
-        <div className="fixed top-[37px] right-[20px] z-[60] group hidden lg:block">
+        <div className="fixed top-[37px] right-[20px] z-[60] group hidden xl:block">
           <div className="flex flex-col items-center">
             <div 
               className={cn(
@@ -1166,7 +1166,7 @@ export default function ChatContainer() {
       )}
 
       {/* Main Chat Container */}
-      <div className={`flex flex-col h-screen transition-opacity duration-200 ${isStatusDropdownOpen ? 'opacity-20' : 'opacity-100'}`}>
+      <div className="flex flex-col h-screen">
         {/* Fixed Header Space - increased to account for nav header + buffer */}
         <div className="h-[120px] flex-shrink-0" />
         
@@ -1211,22 +1211,6 @@ export default function ChatContainer() {
                           <EmailForm />
                         </div>
                         
-                        {/* OR divider and API keys option (dev only) */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <>
-                            <div className="flex items-center mb-4">
-                              <div className="flex-1 border-t border-on-dark/20"></div>
-                              <span className="px-3 text-xs text-on-dark-muted">OR</span>
-                              <div className="flex-1 border-t border-on-dark/20"></div>
-                            </div>
-                            <button
-                              onClick={() => setShowSettings(true)}
-                              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                            >
-                              Add your own API keys for unlimited access
-                            </button>
-                          </>
-                        )}
                       </div>
                     </div>
                   )}
@@ -1450,22 +1434,6 @@ export default function ChatContainer() {
                               <EmailForm />
                             </div>
                             
-                            {/* OR divider and API keys option (dev only) */}
-                            {process.env.NODE_ENV === 'development' && (
-                              <>
-                                <div className="flex items-center mb-4">
-                                  <div className="flex-1 border-t border-on-dark/20"></div>
-                                  <span className="px-3 text-xs text-on-dark-muted">OR</span>
-                                  <div className="flex-1 border-t border-on-dark/20"></div>
-                                </div>
-                                <button
-                                  onClick={() => setShowSettings(true)}
-                                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                                >
-                                  Add your own API keys for unlimited access
-                                </button>
-                              </>
-                            )}
                           </>
                         ) : (
                           <>
@@ -1597,59 +1565,16 @@ export default function ChatContainer() {
               selectedTone={selectedTone}
               onToneChange={handleToneChange}
               toneOptions={toneOptions}
+              email={userEmail}
+              sessionId={sessionId}
+              onEmailRequired={() => setShowEmailCapture(true)}
             />
             
-            {/* Usage status and controls */}
-            <div className="flex items-center justify-between mt-3 text-xs text-on-dark-muted">
-              <div className="flex items-center gap-4">
-                <div className="hidden lg:block">
-                  <DevModeToggle isMockMode={isMockMode} onToggle={setIsMockMode} />
-                </div>
-              </div>
-              
-              {/* Feature gated settings - only show in development for now, hidden on mobile */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="hidden lg:block">
-                  <button
-                    onClick={() => setShowSettings(true)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
-                      usageStatus?.hasOwnKeys
-                        ? "bg-success/10 border border-success/20 text-success hover:bg-success/15" // Success state with own keys
-                        : "bg-on-dark/5 border border-on-dark/10 text-on-dark-muted hover:bg-on-dark/10 hover:text-on-dark" // Default state
-                    )}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="text-xs font-medium">
-                      {usageStatus?.hasOwnKeys ? "API Settings" : "Settings"}
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
           </div>
         )}
       </div>
 
-      {/* Settings Dialog */}
-      <SettingsDialog
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        onKeysUpdated={(keys) => {
-          setUserKeys(keys);
-          // Update usage status to reflect having own keys
-          if (usageStatus) {
-            setUsageStatus({
-              ...usageStatus,
-              hasOwnKeys: Boolean(keys.openai || keys.anthropic),
-            });
-          }
-        }}
-        selectedTone={selectedTone}
-        onToneChange={handleToneChange}
-        toneOptions={toneOptions}
-      />
 
       {/* Email Capture Modal */}
       <EmailCaptureModal

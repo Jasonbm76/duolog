@@ -99,13 +99,19 @@ export default function EmailCaptureModal({
 
       // Handle already verified case first (even with 400 status)
       if (data.alreadyVerified) {
-        // Email already verified, proceed directly
+        // Email already verified, save to localStorage and proceed directly
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_email', cleanEmail);
+        }
         toast.success('Email already verified! Starting conversation...');
         await onSubmit(cleanEmail);
         return; // Exit early since onSubmit handles closing the modal
       } else if (data.success) {
         if (data.devBypass) {
-          // Development bypass - proceed directly
+          // Development bypass - save to localStorage and proceed directly
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user_email', cleanEmail);
+          }
           toast.success('Development bypass: Email auto-verified');
           await onSubmit(cleanEmail);
           return; // Exit early since onSubmit handles closing the modal

@@ -151,3 +151,17 @@ dist
 _design/
 
 certificates
+
+# Database dumps and backups (but not migrations)
+/*.sql
+*_data.sql
+*_backup.sql
+*_dump.sql
+*duolog_data*.sql
+*production_backup*.sql
+*.backup
+*.dump
+/backups/
+
+# MCP Configuration (contains database credentials)
+.mcp.json

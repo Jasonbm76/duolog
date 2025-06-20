@@ -402,11 +402,18 @@ class EmailUsageTracker {
       }
 
       // Generate verification token and expiration
-      const { data: tokenData } = await supabase
+      const { data: tokenData, error: tokenError } = await supabase
         .rpc('generate_verification_token');
+
+      if (tokenError) {
+        console.error('Error generating verification token:', tokenError);
+        return { success: false, error: 'Failed to generate verification token' };
+      }
 
       const verificationToken = tokenData;
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      console.log('Generated token:', verificationToken, 'for email:', email);
 
       // Create or update user with verification token
       const { error: upsertError } = await supabase
@@ -426,7 +433,7 @@ class EmailUsageTracker {
 
       if (upsertError) {
         console.error('Error creating/updating user with verification token:', upsertError);
-        return { success: false, error: 'Failed to generate verification token' };
+        return { success: false, error: `Database error: ${upsertError.message}` };
       }
 
       // Record the attempt

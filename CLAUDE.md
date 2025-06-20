@@ -270,7 +270,7 @@ SELECT * FROM production_table; # When working locally
 
 # ✅ CORRECT - Use appropriate environment
 # For local development:
-psql -h localhost -p 54322 -U postgres -d postgres
+psql -h localhost -p 64322 -U postgres -d postgres
 # For production (only when explicitly requested):
 # Use production database connection strings
 ```
@@ -620,4 +620,271 @@ if (body.name !== undefined) {
 4. **COORDINATE** with application code changes
 5. **APPLY** to production only after local verification
 
-**REMEMBER: These practices ensure maintainable, secure, and performant Next.js applications with Supabase integration.**
+## 🚀 LATEST TECH STACK UPDATES (2025)
+
+### ✅ **Next.js 15 Advanced Patterns**
+
+**Server Components by Default with Strategic Client Boundaries:**
+
+```typescript
+// ✅ Server Component (default) - Data fetching on server
+async function PostList() {
+  const posts = await db.posts.getAll(); // Server-side data fetching
+  return (
+    <div>
+      {posts.map(post => (
+        <InteractivePost key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+
+// ✅ Client Component - Interactive features only
+'use client'
+function InteractivePost({ post }) {
+  const [liked, setLiked] = useState(false);
+  return (
+    <div>
+      <h3>{post.title}</h3>
+      <button onClick={() => setLiked(!liked)}>
+        {liked ? '❤️' : '🤍'}
+      </button>
+    </div>
+  );
+}
+```
+
+**Enhanced Data Fetching with Cache Controls:**
+
+```typescript
+// ✅ Static data (cached)
+async function getStaticData() {
+  const res = await fetch('https://api.example.com/data', {
+    next: { revalidate: 3600 } // Cache for 1 hour
+  });
+  return res.json();
+}
+
+// ✅ Dynamic data (no cache)
+async function getDynamicData() {
+  const res = await fetch('https://api.example.com/data', {
+    cache: 'no-store' // Always fresh
+  });
+  return res.json();
+}
+```
+
+### ✅ **Supabase SSR Optimized Patterns**
+
+**Browser vs Server Client Creation:**
+
+```typescript
+// ✅ utils/supabase/client.ts - Browser client
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// ✅ utils/supabase/server.ts - Server client
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+}
+```
+
+**Enhanced TypeScript Integration:**
+
+```typescript
+// ✅ Generated types integration
+import { createClient } from '@supabase/supabase-js'
+import { Database } from './database.types'
+
+const supabase = createClient<Database>(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+
+// ✅ Fully typed queries
+const { data, error } = await supabase
+  .from('posts') // Fully typed table
+  .select('id, title, author(*)')  // Typed relations
+  .eq('published', true)
+```
+
+### ✅ **React Modern Hook Patterns**
+
+**Server Actions with useActionState:**
+
+```typescript
+// ✅ Server action
+'use server'
+export async function updatePost(prevState: any, formData: FormData) {
+  const title = formData.get('title') as string
+  
+  if (!title.trim()) {
+    return { error: 'Title is required' }
+  }
+  
+  await db.posts.update({ title })
+  return { success: true }
+}
+
+// ✅ Client component using server action
+'use client'
+import { useActionState } from 'react'
+
+function UpdatePostForm() {
+  const [state, formAction, isPending] = useActionState(updatePost, null)
+  
+  return (
+    <form action={formAction}>
+      <input name="title" disabled={isPending} />
+      {state?.error && <span className="text-error">{state.error}</span>}
+      <button disabled={isPending}>
+        {isPending ? 'Saving...' : 'Save'}
+      </button>
+    </form>
+  )
+}
+```
+
+**Promise Handling with use() Hook:**
+
+```typescript
+// ✅ Server component initiating promise
+async function PostPage({ id }: { id: string }) {
+  const postPromise = fetchPost(id) // Don't await
+  
+  return (
+    <Suspense fallback={<PostSkeleton />}>
+      <PostContent postPromise={postPromise} />
+    </Suspense>
+  )
+}
+
+// ✅ Client component consuming promise
+'use client'
+import { use } from 'react'
+
+function PostContent({ postPromise }: { postPromise: Promise<Post> }) {
+  const post = use(postPromise) // Suspends until resolved
+  return <div>{post.title}</div>
+}
+```
+
+### ✅ **Enhanced Hydration Safety Patterns**
+
+**Progressive Enhancement Pattern:**
+
+```typescript
+// ✅ Enhanced hydration-safe component
+'use client'
+function InteractiveComponent() {
+  const [mounted, setMounted] = useState(false)
+  const [data, setData] = useState<Data | null>(null)
+  
+  useEffect(() => {
+    setMounted(true)
+    // Client-only operations
+    setData(getClientOnlyData())
+  }, [])
+  
+  if (!mounted) {
+    // Server-safe fallback
+    return <div>Loading...</div>
+  }
+  
+  return (
+    <div>
+      {data ? <ClientOnlyFeature data={data} /> : <Skeleton />}
+    </div>
+  )
+}
+```
+
+### ✅ **Advanced Mobile Compatibility**
+
+**Optimized useEffect Patterns:**
+
+```typescript
+// ✅ Mobile-optimized data fetching
+function DataComponent({ userId }: { userId: string }) {
+  const [data, setData] = useState<Data[]>([])
+  const [loading, setLoading] = useState(false)
+  const abortControllerRef = useRef<AbortController>()
+  
+  const fetchData = useCallback(async (id: string) => {
+    // Cancel previous request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
+    
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/data/${id}`, {
+        signal: abortControllerRef.current.signal
+      })
+      const result = await response.json()
+      setData(result)
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        toast.error('Failed to load data')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+  
+  useEffect(() => {
+    if (userId) {
+      fetchData(userId)
+    }
+    
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [userId, fetchData])
+  
+  return <div>{loading ? <Spinner /> : <DataList data={data} />}</div>
+}
+```
+
+### ✅ **Updated Development Guidelines**
+
+**Latest Tech Stack Rules:**
+- **ALWAYS** use Server Components for data fetching unless interactivity needed
+- **STRATEGIC** placement of `'use client'` boundaries to minimize bundle size
+- **PREFER** `useActionState` over manual form handling with server actions
+- **USE** `use()` hook for consuming promises from Server Components
+- **IMPLEMENT** progressive enhancement for client-only features
+- **OPTIMIZE** for mobile Safari with proper abort controllers and error boundaries
+
+**Latest Next.js 15 + Supabase SSR + React 19 Integration:**
+- Server Components handle all data fetching and static content
+- Client Components only for interactivity and browser APIs
+- Supabase SSR clients for proper session handling
+- Generated TypeScript types for full type safety
+- Progressive enhancement for optimal user experience
+
+**REMEMBER: These practices ensure maintainable, secure, and performant Next.js applications with Supabase integration using the latest 2025 patterns.**
