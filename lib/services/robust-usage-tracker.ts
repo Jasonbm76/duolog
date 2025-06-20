@@ -1,16 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from '@/utils/supabase/server';
 import { extractIPAddress, isPrivateIP, isLikelyVPN, getCountryCodeFromIP, globalRateLimiter } from '@/lib/utils/ip-utils';
 import { NextRequest } from 'next/server';
-
-// Validate environment variables
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  throw new Error('Missing required Supabase environment variables');
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 interface UsageResult {
   allowed: boolean;
@@ -118,6 +108,8 @@ class RobustUsageTracker {
     const { composite, ip, fingerprint, persistentId, sessionId } = identifiers;
 
     try {
+      const supabase = await createServiceRoleClient();
+      
       // First, try to find existing record by composite identifier
       let { data: existing, error } = await supabase
         .from('usage_tracking')
@@ -287,6 +279,7 @@ class RobustUsageTracker {
       }
 
       // Increment conversation count
+      const supabase = await createServiceRoleClient();
       const { error } = await supabase
         .from('usage_tracking')
         .update({
@@ -340,6 +333,7 @@ class RobustUsageTracker {
   // Block a user (admin function)
   async blockUser(userIdentifier: string): Promise<boolean> {
     try {
+      const supabase = await createServiceRoleClient();
       const { error } = await supabase
         .from('usage_tracking')
         .update({ is_blocked: true, updated_at: new Date().toISOString() })
@@ -355,6 +349,7 @@ class RobustUsageTracker {
   // Unblock a user (admin function)
   async unblockUser(userIdentifier: string): Promise<boolean> {
     try {
+      const supabase = await createServiceRoleClient();
       const { error } = await supabase
         .from('usage_tracking')
         .update({ is_blocked: false, updated_at: new Date().toISOString() })
@@ -370,6 +365,7 @@ class RobustUsageTracker {
   // Get usage analytics (admin function)
   async getAnalytics(): Promise<any> {
     try {
+      const supabase = await createServiceRoleClient();
       const { data, error } = await supabase
         .from('usage_analytics')
         .select('*')

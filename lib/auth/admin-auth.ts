@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+import { createServiceRoleClient } from '@/utils/supabase/server';
 
 interface AdminAuthResult {
   isAuthenticated: boolean;
@@ -88,11 +81,9 @@ export class AdminAuth {
       return { success: false, error: 'Email not authorized for admin access' };
     }
 
-    if (!supabase) {
-      return { success: false, error: 'Database not configured' };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       // Generate verification token
       const { data: tokenData } = await supabase
         .rpc('generate_verification_token');
@@ -138,11 +129,9 @@ export class AdminAuth {
    * Verify admin token and create session
    */
   static async verifyAdminToken(token: string): Promise<{ success: boolean; email?: string; sessionToken?: string; error?: string }> {
-    if (!supabase) {
-      return { success: false, error: 'Database not configured' };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       // Find and verify token
       const { data: adminSession, error } = await supabase
         .from('admin_sessions')
@@ -203,30 +192,9 @@ export class AdminAuth {
       return { isAuthenticated: false, error: 'No session token provided' };
     }
 
-    if (!supabase) {
-      // Fallback for development without database
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-      if (adminEmails.length > 0) {
-        return { 
-          isAuthenticated: true, 
-          email: adminEmails[0] 
-        };
-      }
-      
-      // Development mode fallback - if no admin emails configured, 
-      // allow access for development (this should be removed in production)
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('⚠️  Admin access granted in development mode without ADMIN_EMAILS configured');
-        return { 
-          isAuthenticated: true, 
-          email: 'dev@localhost' 
-        };
-      }
-      
-      return { isAuthenticated: false, error: 'Database not configured and no admin emails set' };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       const { data: session, error } = await supabase
         .from('admin_sessions')
         .select('email, session_expires_at')
@@ -258,11 +226,13 @@ export class AdminAuth {
    * Logout admin session
    */
   static async logout(sessionToken: string): Promise<{ success: boolean }> {
-    if (!supabase || !sessionToken) {
+    if (!sessionToken) {
       return { success: true }; // Always allow logout
     }
 
     try {
+      const supabase = await createServiceRoleClient();
+      
       await supabase
         .from('admin_sessions')
         .update({ session_token: null, session_expires_at: null })
