@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceRoleClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!supabase) {
-      return NextResponse.json({ error: 'Database connection unavailable' }, { status: 500 });
-    }
+    const supabase = await createServiceRoleClient();
 
     // Get basic user stats
     const [usersResult, conversationsResult, recentUsersResult, conversationHistoryResult] = await Promise.all([

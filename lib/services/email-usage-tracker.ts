@@ -1,17 +1,6 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from '@/utils/supabase/server';
 import { extractIPAddress } from '@/lib/utils/ip-utils';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('Missing Supabase configuration for email usage tracking');
-}
-
-const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
 
 interface UserIdentifiers {
   email: string;
@@ -80,19 +69,9 @@ class EmailUsageTracker {
       };
     }
 
-    // If no database, use fallback
-    if (!supabase) {
-      console.warn('No Supabase connection - using fallback limits');
-      return {
-        allowed: true,
-        used: 0,
-        limit: this.fallbackLimit,
-        hasOwnKeys: false,
-        email: identifiers.email
-      };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       // Check existing usage by email
       const { data: existingUsage, error } = await supabase
         .from('user_usage')
@@ -214,12 +193,9 @@ class EmailUsageTracker {
       return true;
     }
 
-    if (!supabase) {
-      console.warn('No Supabase connection - cannot increment usage');
-      return false;
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       // First get current count, then increment
       const { data: currentData, error: fetchError } = await supabase
         .from('user_usage')
@@ -269,12 +245,9 @@ class EmailUsageTracker {
   }
 
   async resetUsage(email: string): Promise<boolean> {
-    if (!supabase) {
-      console.warn('No Supabase connection - cannot reset usage');
-      return false;
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       const { error } = await supabase
         .from('user_usage')
         .update({
@@ -296,11 +269,9 @@ class EmailUsageTracker {
   }
 
   async getUserUsage(email: string): Promise<UsageStatus | null> {
-    if (!supabase) {
-      return null;
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       const { data, error } = await supabase
         .from('user_usage')
         .select('*')
@@ -330,11 +301,9 @@ class EmailUsageTracker {
     suspiciousUsers: number;
     averageConversations: number;
   }> {
-    if (!supabase) {
-      return { totalUsers: 0, suspiciousUsers: 0, averageConversations: 0 };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       const [usersResult, abuseResult, avgResult] = await Promise.all([
         supabase.from('user_usage').select('id'),
         supabase.from('usage_abuse_log').select('email', { count: 'exact' }),
@@ -359,12 +328,9 @@ class EmailUsageTracker {
   }
 
   async sendVerificationEmail(email: string, ip?: string): Promise<{ success: boolean; error?: string; alreadyVerified?: boolean }> {
-    if (!supabase) {
-      console.warn('No Supabase connection - cannot send verification');
-      return { success: false, error: 'Database not configured' };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       // Check if email is already verified
       const { data: existingUser } = await supabase
         .from('user_usage')
@@ -463,11 +429,9 @@ class EmailUsageTracker {
   }
 
   async verifyEmail(token: string): Promise<{ success: boolean; email?: string; error?: string }> {
-    if (!supabase) {
-      return { success: false, error: 'Database not configured' };
-    }
-
     try {
+      const supabase = await createServiceRoleClient();
+      
       const { data: result } = await supabase
         .rpc('verify_email_token', { p_token: token });
 

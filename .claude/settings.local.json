@@ -13,7 +13,10 @@
       "mcp__context7__get-library-docs",
       "Bash(mkdir:*)",
       "mcp__github__create_or_update_file",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "mcp__github__get_file_contents"
     ],
     "deny": [
       "Bash(DROP TABLE*)",

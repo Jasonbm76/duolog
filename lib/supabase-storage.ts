@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 const BUCKET_NAME = 'duolog-files';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -82,6 +82,8 @@ function generateFilePath(userId: string, fileName: string): string {
 
 // Upload file to Supabase Storage
 export async function uploadFile(file: File, userId: string): Promise<FileUploadResult> {
+  const supabase = createClient();
+  
   try {
     // Validate file first
     const validation = validateFile(file);
@@ -135,6 +137,8 @@ export async function uploadFile(file: File, userId: string): Promise<FileUpload
 
 // Delete file from storage
 export async function deleteFile(filePath: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createClient();
+  
   try {
     const { error } = await supabase.storage
       .from(BUCKET_NAME)

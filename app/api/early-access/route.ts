@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase';
+import { createServiceRoleClient } from '@/utils/supabase/server';
 import { sendWelcomeEmail } from '@/lib/resend';
 import { z } from 'zod';
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { email } = validationResult.data;
     
     // Initialize Supabase client with service role
-    const supabase = createServerClient();
+    const supabase = await createServiceRoleClient();
     
     // Check if email already exists
     const { data: existingEmail, error: checkError } = await supabase
