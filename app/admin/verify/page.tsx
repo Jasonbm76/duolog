@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { AdminAuth } from '@/lib/auth/admin-auth';
+import { AdminAuthClient } from '@/lib/auth/admin-auth-client';
 
 type VerificationState = 'verifying' | 'success' | 'error' | 'expired';
 
@@ -46,7 +46,7 @@ export default function AdminVerifyPage() {
         
         // Mark admin as verified locally to bypass future email verification
         if (data.email) {
-          AdminAuth.markAdminVerifiedLocally(data.email);
+          AdminAuthClient.markAdminVerifiedLocally(data.email);
         }
         
         toast.success('Admin access granted!');

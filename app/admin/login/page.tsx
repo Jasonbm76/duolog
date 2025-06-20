@@ -9,7 +9,7 @@ import { Shield, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { validateEmail } from '@/lib/utils/input-validation';
-import { AdminAuth } from '@/lib/auth/admin-auth';
+import { AdminAuthClient } from '@/lib/auth/admin-auth-client';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
     setIsSubmitting(true);
     try {
       // Check if admin is already verified locally
-      if (AdminAuth.isAdminVerifiedLocally(validation.sanitized)) {
+      if (AdminAuthClient.isAdminVerifiedLocally(validation.sanitized)) {
         // Skip email verification and create session directly
         const response = await fetch('/api/admin/auth/create-session', {
           method: 'POST',
@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
 
     const checkVerificationStatus = async () => {
       // Check if admin is verified locally
-      if (AdminAuth.isAdminVerifiedLocally(email)) {
+      if (AdminAuthClient.isAdminVerifiedLocally(email)) {
         try {
           // Create session and redirect
           const response = await fetch('/api/admin/auth/create-session', {
